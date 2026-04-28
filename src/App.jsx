@@ -8,13 +8,10 @@ const C = {
   grn:'#2DD48A', blu:'#5B9CF6', amb:'#F5A623', red:'#F06D6D', pur:'#9F7AEA',
 }
 
-// ─── SEMANA: LUNES PRIMERO ────────────────────────────────────────────────────
-// JS: 0=Dom,1=Lun,...,6=Sab  →  nuevo índice: (getDay()+6)%7 → 0=Lun,...,6=Dom
 const DKS    = ['lun','mar','mie','jue','vie','sab','dom']
 const DNAMES = { lun:'Lunes', mar:'Martes', mie:'Miércoles', jue:'Jueves', vie:'Viernes', sab:'Sábado', dom:'Domingo' }
 const gdk    = (d = new Date()) => DKS[(d.getDay() + 6) % 7]
 
-// ─── HORARIO BASE ─────────────────────────────────────────────────────────────
 const SCHED_DEFAULT = {
   lun:[
     { id:'lun1', s:'14:00', e:'18:00', t:'uni', a:'Base de Datos' },
@@ -113,16 +110,16 @@ const Icon = ({name,size=22,color='currentColor',sw=1.7}) => {
 
 // ─── COMPONENTS ───────────────────────────────────────────────────────────────
 const Pill = ({color,children}) => (
-  <span style={{display:'inline-flex',alignItems:'center',fontSize:10,padding:'2px 8px',borderRadius:99,background:`${color}20`,color,fontWeight:600,letterSpacing:'0.02em',whiteSpace:'nowrap',lineHeight:'16px'}}>{children}</span>
+  <span style={{display:'inline-flex',alignItems:'center',fontSize:10,padding:'2px 7px',borderRadius:99,background:`${color}20`,color,fontWeight:600,letterSpacing:'0.02em',whiteSpace:'nowrap',lineHeight:'16px'}}>{children}</span>
 )
 const Sec = ({children}) => (
-  <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.1em',color:C.hint,marginBottom:8,marginTop:2}}>{children}</div>
+  <div style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.1em',color:C.hint,marginBottom:6,marginTop:2}}>{children}</div>
 )
 const Card = ({children,accent,style={}}) => (
-  <div style={{background:C.surf,borderRadius:14,padding:'13px 15px',border:`0.5px solid ${C.bor}`,borderLeft:accent?`3px solid ${accent}`:undefined,...style}}>{children}</div>
+  <div style={{background:C.surf,borderRadius:12,padding:'11px 13px',border:`0.5px solid ${C.bor}`,borderLeft:accent?`3px solid ${accent}`:undefined,...style}}>{children}</div>
 )
 const Btn = ({onClick,disabled,children,variant='outline',style={}}) => {
-  const base = {borderRadius:11,padding:'11px 16px',fontSize:13,cursor:disabled?'not-allowed':'pointer',fontWeight:500,border:'none',opacity:disabled?0.5:1,fontFamily:'inherit'}
+  const base = {borderRadius:10,padding:'10px 14px',fontSize:13,cursor:disabled?'not-allowed':'pointer',fontWeight:500,border:'none',opacity:disabled?0.5:1,fontFamily:'inherit'}
   const v = {
     primary:{background:C.grn,color:'#000',fontWeight:700},
     outline:{background:'transparent',color:C.txt,border:`0.5px solid ${C.bor2}`},
@@ -136,7 +133,7 @@ function EditSchedulePanel({sched,onSave,onClose}) {
   const [local,setLocal] = useState(()=>JSON.parse(JSON.stringify(sched)))
   const [adding,setAdding] = useState(null)
   const [newBlk,setNewBlk] = useState({s:'',e:'',t:'uni',a:''})
-  const inp = {width:'100%',padding:'9px 12px',borderRadius:9,border:`0.5px solid ${C.bor}`,background:C.surf2,color:C.txt,fontSize:13,outline:'none',fontFamily:'inherit'}
+  const inp = {width:'100%',padding:'9px 11px',borderRadius:9,border:`0.5px solid ${C.bor}`,background:C.surf2,color:C.txt,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}
 
   const removeBlk = (dk,id) => setLocal(p=>({...p,[dk]:(p[dk]||[]).filter(b=>b.id!==id)}))
   const startAdd  = dk => { setAdding(dk); setNewBlk({s:'',e:'',t:'uni',a:''}) }
@@ -149,45 +146,45 @@ function EditSchedulePanel({sched,onSave,onClose}) {
 
   return (
     <div style={{position:'absolute',inset:0,background:C.bg,zIndex:50,display:'flex',flexDirection:'column'}}>
-      <div style={{padding:'14px 18px',borderBottom:`0.5px solid ${C.bor}`,display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+      <div style={{padding:'11px 16px',borderBottom:`0.5px solid ${C.bor}`,display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
         <button onClick={onClose} style={{background:'none',border:'none',color:C.mut,cursor:'pointer',padding:4,display:'flex'}}>
-          <Icon name="arrow" size={20} color={C.mut}/>
+          <Icon name="arrow" size={19} color={C.mut}/>
         </button>
-        <span style={{fontSize:16,fontWeight:600,flex:1}}>Editar horario</span>
-        <Btn variant="primary" onClick={()=>onSave(local)} style={{padding:'8px 18px',fontSize:12}}>Guardar</Btn>
+        <span style={{fontSize:15,fontWeight:600,flex:1}}>Editar horario</span>
+        <Btn variant="primary" onClick={()=>onSave(local)} style={{padding:'7px 16px',fontSize:12}}>Guardar</Btn>
       </div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'14px 18px',WebkitOverflowScrolling:'touch'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'12px 16px',WebkitOverflowScrolling:'touch'}}>
         {DKS.map(dk=>(
-          <div key={dk} style={{marginBottom:22}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-              <span style={{fontSize:14,fontWeight:600,color:C.txt}}>{DNAMES[dk]}</span>
+          <div key={dk} style={{marginBottom:18}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:7}}>
+              <span style={{fontSize:13,fontWeight:600,color:C.txt}}>{DNAMES[dk]}</span>
               <button onClick={()=>startAdd(dk)} style={{background:'none',border:'none',color:C.grn,cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontSize:11,fontWeight:600,fontFamily:'inherit'}}>
-                <Icon name="plus" size={13} color={C.grn}/> Agregar
+                <Icon name="plus" size={12} color={C.grn}/> Agregar
               </button>
             </div>
 
             {(local[dk]||[]).length===0&&(
-              <div style={{fontSize:12,color:C.hint,padding:'6px 0'}}>Día libre</div>
+              <div style={{fontSize:12,color:C.hint,padding:'4px 0'}}>Día libre</div>
             )}
 
             {[...(local[dk]||[])].sort((a,b)=>pt(a.s)-pt(b.s)).map(b=>(
-              <div key={b.id} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',background:C.surf,borderRadius:10,border:`0.5px solid ${C.bor}`,marginBottom:6}}>
-                <div style={{width:3,height:28,borderRadius:2,background:BCOL[b.t]||C.amb,flexShrink:0}}/>
+              <div key={b.id} style={{display:'flex',alignItems:'center',gap:9,padding:'8px 11px',background:C.surf,borderRadius:9,border:`0.5px solid ${C.bor}`,marginBottom:5}}>
+                <div style={{width:3,height:26,borderRadius:2,background:BCOL[b.t]||C.amb,flexShrink:0}}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:12,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.a}</div>
                   <div style={{fontSize:11,color:C.mut,marginTop:1}}>{fmt12(b.s)} – {fmt12(b.e)}</div>
                 </div>
                 <Pill color={BCOL[b.t]||C.amb}>{BLBL[b.t]||'Personal'}</Pill>
                 <button onClick={()=>removeBlk(dk,b.id)} style={{background:'none',border:'none',color:C.red,cursor:'pointer',padding:4,display:'flex',flexShrink:0}}>
-                  <Icon name="trash" size={15} color={C.red}/>
+                  <Icon name="trash" size={14} color={C.red}/>
                 </button>
               </div>
             ))}
 
             {adding===dk&&(
-              <div style={{background:C.surf2,borderRadius:11,padding:'12px 13px',border:`0.5px solid ${C.bor2}`,marginTop:6}}>
-                <div style={{fontSize:12,fontWeight:500,color:C.grn,marginBottom:10}}>Nuevo bloque — {DNAMES[dk]}</div>
+              <div style={{background:C.surf2,borderRadius:10,padding:'11px 12px',border:`0.5px solid ${C.bor2}`,marginTop:5}}>
+                <div style={{fontSize:12,fontWeight:500,color:C.grn,marginBottom:9}}>Nuevo bloque — {DNAMES[dk]}</div>
                 <input placeholder="Nombre del bloque" value={newBlk.a} onChange={e=>setNewBlk(p=>({...p,a:e.target.value}))} style={{...inp,marginBottom:8}}/>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
                   <div>
@@ -252,10 +249,8 @@ export default function MyApp() {
   const [notifP,setNotifP]         = useState(typeof Notification!=='undefined'?Notification.permission:'denied')
   const lastNotif = useRef(null)
 
-  // Clock
   useEffect(()=>{ const i=setInterval(()=>setNow(new Date()),1000); return()=>clearInterval(i) },[])
 
-  // Load persisted data
   useEffect(()=>{
     ;(async()=>{
       try{const r=await window.storage.get('ma5_h');if(r)setHabits(JSON.parse(r.value))}catch{}
@@ -268,7 +263,6 @@ export default function MyApp() {
     }
   },[])
 
-  // Notifications — dispara al inicio EXACTO de cada bloque (revisa cada 20s)
   useEffect(()=>{
     const fire = () => {
       if(typeof Notification==='undefined'||Notification.permission!=='granted') return
@@ -287,14 +281,12 @@ export default function MyApp() {
     return()=>clearInterval(i)
   },[sched])
 
-  // Persist helpers
   const saveH = async h=>{setHabits(h);try{await window.storage.set('ma5_h',JSON.stringify(h))}catch{}}
   const saveG = async g=>{setGoals(g);try{await window.storage.set('ma5_g',JSON.stringify(g))}catch{}}
   const saveE = async e=>{setLocalEvts(e);try{await window.storage.set('ma5_e',JSON.stringify(e))}catch{}}
   const saveS = async s=>{setSched(s);try{await window.storage.set('ma5_s',JSON.stringify(s))}catch{}}
   const togH  = (hid,dk2=dateKey)=>{const c=habits[dk2]||{};saveH({...habits,[dk2]:{...c,[hid]:!c[hid]}})}
 
-  // Derived
   const dk      = gdk(now)
   const dateKey = ldk(now)
   const nowM    = now.getHours()*60+now.getMinutes()
@@ -326,7 +318,6 @@ export default function MyApp() {
   const days7 = Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-(6-i));return ldk(d)})
   const labs7 = days7.map(dk2=>new Date(dk2+'T12:00:00').toLocaleDateString('es-PE',{weekday:'short'}).slice(0,2).toUpperCase())
 
-  // Notion fetchers
   const fetchTasks = async()=>{
     setLoadT(true)
     try{
@@ -359,14 +350,13 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
     setAddingT(false);setShowAddT(false);setNtTitle('');setNtDate('');fetchTasks()
   }
 
-  const inp = {width:'100%',padding:'10px 13px',borderRadius:10,border:`0.5px solid ${C.bor}`,background:C.surf2,color:C.txt,fontSize:13,outline:'none',fontFamily:'inherit'}
+  const inp = {width:'100%',padding:'9px 12px',borderRadius:9,border:`0.5px solid ${C.bor}`,background:C.surf2,color:C.txt,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}
   const timeStr = now.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})
   const dateStr = now.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'})
 
   return (
     <div style={{background:C.bg,color:C.txt,height:'100dvh',fontFamily:'-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif',display:'flex',flexDirection:'column',overflow:'hidden',maxWidth:430,margin:'0 auto',position:'relative'}}>
 
-      {/* Edit schedule panel (overlay) */}
       {editingSched&&(
         <EditSchedulePanel
           sched={sched}
@@ -375,24 +365,32 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
         />
       )}
 
-      {/* HEADER */}
-      <div style={{padding:'14px 20px 13px',borderBottom:`0.5px solid ${C.bor}`,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:C.bg}}>
+      {/* ── HEADER ── */}
+      <div style={{padding:'10px 18px 9px',borderBottom:`0.5px solid ${C.bor}`,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:C.bg}}>
         <div>
-          <div style={{fontSize:10,color:C.mut,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:1}}>My App</div>
-          <div style={{fontSize:20,fontWeight:600,letterSpacing:'-0.02em'}}>Mauricio</div>
+          <div style={{fontSize:9,color:C.hint,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:1}}>My App</div>
+          <div style={{fontSize:18,fontWeight:600,letterSpacing:'-0.02em'}}>Mauricio</div>
         </div>
-        <div style={{width:40,height:40,borderRadius:20,background:`${C.grn}15`,border:`1px solid ${C.grn}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:700,color:C.grn,flexShrink:0}}>M</div>
+        {/* Semana: Editar en el slot derecho. Resto: vacío */}
+        {tab==='semana'&&(
+          <button
+            onClick={()=>setEditingSched(true)}
+            style={{display:'flex',alignItems:'center',gap:5,background:'transparent',border:`0.5px solid ${C.bor}`,borderRadius:8,padding:'6px 11px',color:C.mut,cursor:'pointer',fontSize:11,fontFamily:'inherit',whiteSpace:'nowrap'}}
+          >
+            <Icon name="edit" size={12} color={C.mut}/> Editar
+          </button>
+        )}
       </div>
 
-      {/* CONTENT */}
-      <div style={{flex:1,overflowY:'auto',padding:'16px 18px',WebkitOverflowScrolling:'touch'}}>
+      {/* ── CONTENT ── */}
+      <div style={{flex:1,overflowY:'auto',padding:'13px 16px',WebkitOverflowScrolling:'touch'}}>
 
         {/* ══ HOY ══ */}
         {tab==='hoy'&&<>
-          <div style={{marginBottom:20}}>
-            <div style={{fontSize:11,color:C.mut,textTransform:'capitalize',marginBottom:4}}>{dateStr}</div>
-            <div style={{fontSize:42,fontWeight:200,letterSpacing:'-0.04em',fontVariantNumeric:'tabular-nums',lineHeight:1}}>{timeStr}</div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginTop:10}}>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:11,color:C.mut,textTransform:'capitalize',marginBottom:3}}>{dateStr}</div>
+            <div style={{fontSize:36,fontWeight:200,letterSpacing:'-0.04em',fontVariantNumeric:'tabular-nums',lineHeight:1}}>{timeStr}</div>
+            <div style={{display:'flex',alignItems:'center',gap:7,marginTop:8}}>
               <div style={{display:'flex',gap:3}}>{HABITS.map(h=><div key={h.id} style={{width:5,height:5,borderRadius:'50%',background:todayH[h.id]?C.grn:'rgba(255,255,255,0.1)'}}/>)}</div>
               <span style={{fontSize:11,color:C.mut}}>{hDone}/{HABITS.length} hábitos completados</span>
             </div>
@@ -400,47 +398,47 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
 
           <Sec>Ahora mismo</Sec>
           {curBlock?(
-            <Card accent={BCOL[curBlock.t]||C.grn} style={{marginBottom:12}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+            <Card accent={BCOL[curBlock.t]||C.grn} style={{marginBottom:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
                 <div style={{flex:1,paddingRight:8}}>
-                  <div style={{fontSize:16,fontWeight:500,marginBottom:3}}>{curBlock.a}</div>
-                  <div style={{fontSize:12,color:C.mut}}>{fmt12(curBlock.s)} – {fmt12(curBlock.e)}</div>
+                  <div style={{fontSize:15,fontWeight:500,marginBottom:2}}>{curBlock.a}</div>
+                  <div style={{fontSize:11,color:C.mut}}>{fmt12(curBlock.s)} – {fmt12(curBlock.e)}</div>
                 </div>
                 <Pill color={BCOL[curBlock.t]||C.grn}>{BLBL[curBlock.t]||'Personal'}</Pill>
               </div>
               <div style={{height:3,background:'rgba(255,255,255,0.07)',borderRadius:2,overflow:'hidden'}}>
                 <div style={{height:'100%',borderRadius:2,width:`${bpct(curBlock,nowM)}%`,background:BCOL[curBlock.t]||C.grn,transition:'width 1s linear'}}/>
               </div>
-              <div style={{display:'flex',justifyContent:'space-between',marginTop:5}}>
-                <span style={{fontSize:11,color:C.mut}}>{fmt12(curBlock.s)}</span>
-                <span style={{fontSize:11,color:BCOL[curBlock.t]||C.grn,fontWeight:600}}>{bpct(curBlock,nowM)}%</span>
-                <span style={{fontSize:11,color:C.mut}}>{fmt12(curBlock.e)}</span>
+              <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
+                <span style={{fontSize:10,color:C.mut}}>{fmt12(curBlock.s)}</span>
+                <span style={{fontSize:10,color:BCOL[curBlock.t]||C.grn,fontWeight:600}}>{bpct(curBlock,nowM)}%</span>
+                <span style={{fontSize:10,color:C.mut}}>{fmt12(curBlock.e)}</span>
               </div>
             </Card>
           ):(
-            <Card style={{marginBottom:12,textAlign:'center'}}><span style={{fontSize:12,color:C.mut}}>Sin bloque activo en este momento</span></Card>
+            <Card style={{marginBottom:10,textAlign:'center'}}><span style={{fontSize:12,color:C.mut}}>Sin bloque activo en este momento</span></Card>
           )}
 
           {upcoming.length>0&&<>
             <Sec>A continuación</Sec>
             {upcoming.map((b,i)=>(
-              <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 4px',borderBottom:`0.5px solid ${C.bor}`}}>
-                <div style={{width:2,height:32,borderRadius:2,background:BCOL[b.t]||C.grn,flexShrink:0}}/>
+              <div key={i} style={{display:'flex',alignItems:'center',gap:11,padding:'8px 4px',borderBottom:`0.5px solid ${C.bor}`}}>
+                <div style={{width:2,height:28,borderRadius:2,background:BCOL[b.t]||C.grn,flexShrink:0}}/>
                 <div style={{flex:1}}>
                   <div style={{fontSize:13,fontWeight:500}}>{b.a}</div>
-                  <div style={{fontSize:11,color:C.mut,marginTop:2}}>{fmt12(b.s)} – {fmt12(b.e)}</div>
+                  <div style={{fontSize:11,color:C.mut,marginTop:1}}>{fmt12(b.s)} – {fmt12(b.e)}</div>
                 </div>
                 <Pill color={BCOL[b.t]||C.grn}>{BLBL[b.t]||'Personal'}</Pill>
               </div>
             ))}
           </>}
 
-          <div style={{marginTop:18}}>
+          <div style={{marginTop:14}}>
             <Sec>Hábitos de hoy</Sec>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7}}>
               {HABITS.map(h=>{const done=!!todayH[h.id];return(
-                <div key={h.id} onClick={()=>togH(h.id)} style={{background:done?`${C.grn}10`:C.surf,border:`0.5px solid ${done?C.grn:C.bor}`,borderRadius:12,padding:'10px 12px',cursor:'pointer',display:'flex',alignItems:'center',gap:9}}>
-                  <div style={{width:17,height:17,borderRadius:4,flexShrink:0,border:`1.5px solid ${done?C.grn:'rgba(255,255,255,0.2)'}`,background:done?C.grn:'transparent',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <div key={h.id} onClick={()=>togH(h.id)} style={{background:done?`${C.grn}10`:C.surf,border:`0.5px solid ${done?C.grn:C.bor}`,borderRadius:11,padding:'9px 11px',cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:`1.5px solid ${done?C.grn:'rgba(255,255,255,0.2)'}`,background:done?C.grn:'transparent',display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {done&&<span style={{color:'#000',fontSize:10,fontWeight:800,lineHeight:1}}>✓</span>}
                   </div>
                   <span style={{fontSize:12,color:done?C.grn:C.txt,fontWeight:done?500:400}}>{h.label}</span>
@@ -452,78 +450,75 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
 
         {/* ══ SEMANA ══ */}
         {tab==='semana'&&<>
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-            <div style={{display:'flex',gap:5,overflowX:'auto',flex:1,paddingBottom:2,WebkitOverflowScrolling:'touch'}}>
-              {DKS.map(d=>(
-                <button key={d} onClick={()=>setSelDay(d)} style={{flexShrink:0,padding:'6px 11px',borderRadius:20,cursor:'pointer',border:`0.5px solid ${activeDay===d?C.grn:C.bor}`,background:activeDay===d?`${C.grn}15`:'transparent',color:activeDay===d?C.grn:C.mut,fontSize:12,fontWeight:activeDay===d?600:400,fontFamily:'inherit'}}>
-                  {DNAMES[d].slice(0,3)}
-                </button>
-              ))}
-            </div>
-            <button onClick={()=>setEditingSched(true)} style={{flexShrink:0,display:'flex',alignItems:'center',gap:5,background:'transparent',border:`0.5px solid ${C.bor}`,borderRadius:9,padding:'6px 10px',color:C.mut,cursor:'pointer',fontSize:11,fontFamily:'inherit',whiteSpace:'nowrap'}}>
-              <Icon name="edit" size={12} color={C.mut}/> Editar
-            </button>
+          {/* Solo los pills de días, sin botón Editar (ya está en el header) */}
+          <div style={{display:'flex',gap:5,overflowX:'auto',marginBottom:11,paddingBottom:2,WebkitOverflowScrolling:'touch'}}>
+            {DKS.map(d=>(
+              <button key={d} onClick={()=>setSelDay(d)} style={{flexShrink:0,padding:'6px 10px',borderRadius:20,cursor:'pointer',border:`0.5px solid ${activeDay===d?C.grn:C.bor}`,background:activeDay===d?`${C.grn}15`:'transparent',color:activeDay===d?C.grn:C.mut,fontSize:12,fontWeight:activeDay===d?600:400,fontFamily:'inherit'}}>
+                {DNAMES[d].slice(0,3)}
+              </button>
+            ))}
           </div>
 
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
-            <span style={{fontSize:17,fontWeight:500}}>{DNAMES[activeDay]}</span>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+            <span style={{fontSize:16,fontWeight:500}}>{DNAMES[activeDay]}</span>
             {activeDay===dk&&<Pill color={C.grn}>hoy</Pill>}
           </div>
 
           {activeAll.length===0?(
             <Card style={{textAlign:'center'}}><span style={{fontSize:13,color:C.mut}}>Día libre 🎉</span></Card>
           ):activeAll.map((b,i)=>(
-            <div key={b.id||i} style={{display:'flex',alignItems:'center',gap:11,padding:aCurIdx===i?'10px 13px':'9px 4px',background:aCurIdx===i?`${BCOL[b.t]||C.grn}10`:'transparent',borderBottom:`0.5px solid ${C.bor}`,borderRadius:aCurIdx===i?11:0,marginBottom:aCurIdx===i?2:0}}>
-              <div style={{width:2,height:32,borderRadius:2,background:BCOL[b.t]||C.amb,flexShrink:0}}/>
+            <div key={b.id||i} style={{display:'flex',alignItems:'center',gap:11,padding:aCurIdx===i?'9px 12px':'8px 4px',background:aCurIdx===i?`${BCOL[b.t]||C.grn}10`:'transparent',borderBottom:`0.5px solid ${C.bor}`,borderRadius:aCurIdx===i?10:0,marginBottom:aCurIdx===i?2:0}}>
+              <div style={{width:2,height:28,borderRadius:2,background:BCOL[b.t]||C.amb,flexShrink:0}}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,fontWeight:aCurIdx===i?500:400}}>{b.a}</div>
-                <div style={{fontSize:11,color:C.mut,marginTop:2}}>{fmt12(b.s)} – {fmt12(b.e)}</div>
+                <div style={{fontSize:11,color:C.mut,marginTop:1}}>{fmt12(b.s)} – {fmt12(b.e)}</div>
               </div>
+              <Pill color={BCOL[b.t]||C.amb}>{BLBL[b.t]||'Personal'}</Pill>
               {!b._fixed&&(
-                <button onClick={()=>{const evts={...localEvts};evts[activeDK]=(evts[activeDK]||[]).filter(e=>e.id!==b.id);saveE(evts)}} style={{background:'none',border:'none',color:C.mut,cursor:'pointer',fontSize:17,padding:'0 6px',lineHeight:1}}>×</button>
+                <button onClick={()=>{const evts={...localEvts};evts[activeDK]=(evts[activeDK]||[]).filter(e=>e.id!==b.id);saveE(evts)}} style={{background:'none',border:'none',color:C.mut,cursor:'pointer',fontSize:16,padding:'0 5px',lineHeight:1}}>×</button>
               )}
             </div>
           ))}
 
           {showAddEvt?(
-            <Card style={{marginTop:12}}>
-              <div style={{fontSize:13,fontWeight:500,marginBottom:12}}>Nuevo evento personal</div>
-              <input placeholder="Nombre del evento" value={evtTitle} onChange={e=>setEvtTitle(e.target.value)} style={{...inp,marginBottom:10}}/>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginBottom:12}}>
-                <div><div style={{fontSize:11,color:C.mut,marginBottom:4}}>Inicio</div><input type="time" value={evtStart} onChange={e=>setEvtStart(e.target.value)} style={inp}/></div>
-                <div><div style={{fontSize:11,color:C.mut,marginBottom:4}}>Fin</div><input type="time" value={evtEnd} onChange={e=>setEvtEnd(e.target.value)} style={inp}/></div>
+            <Card style={{marginTop:11}}>
+              <div style={{fontSize:13,fontWeight:500,marginBottom:10}}>Nuevo evento personal</div>
+              <input placeholder="Nombre del evento" value={evtTitle} onChange={e=>setEvtTitle(e.target.value)} style={{...inp,marginBottom:9}}/>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:11}}>
+                <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Inicio</div><input type="time" value={evtStart} onChange={e=>setEvtStart(e.target.value)} style={inp}/></div>
+                <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Fin</div><input type="time" value={evtEnd} onChange={e=>setEvtEnd(e.target.value)} style={inp}/></div>
               </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                 <Btn variant="outline" onClick={()=>{setShowAddEvt(false);setEvtTitle('');setEvtStart('');setEvtEnd('')}} style={{width:'100%'}}>Cancelar</Btn>
                 <Btn variant="primary" onClick={()=>{if(!evtTitle||!evtStart||!evtEnd)return;const evts={...localEvts};evts[activeDK]=[...(evts[activeDK]||[]),{id:uid(),s:evtStart,e:evtEnd,a:evtTitle}];saveE(evts);setShowAddEvt(false);setEvtTitle('');setEvtStart('');setEvtEnd('')}} style={{width:'100%'}}>Agregar</Btn>
               </div>
             </Card>
-          ):<Btn variant="ghost" onClick={()=>setShowAddEvt(true)} style={{width:'100%',marginTop:12}}>+ Agregar evento personal</Btn>}
+          ):<Btn variant="ghost" onClick={()=>setShowAddEvt(true)} style={{width:'100%',marginTop:11}}>+ Agregar evento personal</Btn>}
         </>}
 
         {/* ══ TAREAS ══ */}
         {tab==='tareas'&&<>
-          <div style={{display:'flex',gap:5,marginBottom:14,overflowX:'auto',paddingBottom:2}}>
+          <div style={{display:'flex',gap:5,marginBottom:12,overflowX:'auto',paddingBottom:2}}>
             {[['all','Todas'],['entregas','Uni'],['tareas','Trabajo'],['vendify','Vendify']].map(([k,l])=>(
-              <button key={k} onClick={()=>setTFilter(k)} style={{flexShrink:0,padding:'7px 13px',borderRadius:20,cursor:'pointer',border:`0.5px solid ${tFilter===k?C.grn:C.bor}`,background:tFilter===k?`${C.grn}15`:'transparent',color:tFilter===k?C.grn:C.mut,fontSize:12,fontWeight:tFilter===k?600:400,fontFamily:'inherit'}}>{l}</button>
+              <button key={k} onClick={()=>setTFilter(k)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,cursor:'pointer',border:`0.5px solid ${tFilter===k?C.grn:C.bor}`,background:tFilter===k?`${C.grn}15`:'transparent',color:tFilter===k?C.grn:C.mut,fontSize:12,fontWeight:tFilter===k?600:400,fontFamily:'inherit'}}>{l}</button>
             ))}
           </div>
 
           {tasks===null?(
-            <div style={{textAlign:'center',paddingTop:32}}>
-              <div style={{fontSize:32,marginBottom:12}}>📋</div>
-              <div style={{fontSize:13,color:C.mut,marginBottom:16,lineHeight:1.6}}>Conecta Notion para ver tus tareas</div>
+            <div style={{textAlign:'center',paddingTop:28}}>
+              <div style={{fontSize:28,marginBottom:10}}>📋</div>
+              <div style={{fontSize:13,color:C.mut,marginBottom:14,lineHeight:1.6}}>Conecta Notion para ver tus tareas</div>
               <Btn variant="primary" onClick={fetchTasks} style={{width:'100%'}}>Cargar tareas de Notion</Btn>
             </div>
           ):loadT?(
-            <div style={{textAlign:'center',padding:'40px 0',color:C.mut,fontSize:13}}>Cargando tareas...</div>
+            <div style={{textAlign:'center',padding:'36px 0',color:C.mut,fontSize:13}}>Cargando tareas...</div>
           ):<>
             {[['Hoy',tToday],['Mañana',tTmrw],['Próximas',tUp],['Sin fecha',tNone]].map(([label,items])=>items.length>0&&(
               <div key={label}>
                 <Sec>{label}</Sec>
                 {items.map((t,i)=>(
-                  <Card key={i} style={{marginBottom:8}}>
-                    <div style={{fontSize:13,fontWeight:500,marginBottom:7}}>{t.title}</div>
+                  <Card key={i} style={{marginBottom:7}}>
+                    <div style={{fontSize:13,fontWeight:500,marginBottom:6}}>{t.title}</div>
                     <div style={{display:'flex',gap:5,flexWrap:'wrap',alignItems:'center'}}>
                       <Pill color={t.source==='entregas'?C.blu:t.source==='vendify'?C.grn:C.amb}>{t.source==='entregas'?'Uni':t.source==='vendify'?'Vendify':'Trabajo'}</Pill>
                       {t.priority&&<Pill color={pcolor(t.priority)}>{t.priority}</Pill>}
@@ -533,29 +528,29 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
                 ))}
               </div>
             ))}
-            {ftasks.length===0&&<div style={{textAlign:'center',padding:28,color:C.mut,fontSize:13}}>Sin tareas en esta categoría</div>}
+            {ftasks.length===0&&<div style={{textAlign:'center',padding:24,color:C.mut,fontSize:13}}>Sin tareas en esta categoría</div>}
           </>}
 
           {showAddT?(
-            <Card style={{marginTop:10}}>
-              <div style={{fontSize:13,fontWeight:500,marginBottom:12}}>Nueva tarea en Notion</div>
-              <input placeholder="Nombre de la tarea" value={ntTitle} onChange={e=>setNtTitle(e.target.value)} style={{...inp,marginBottom:10}}/>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginBottom:10}}>
-                <div><div style={{fontSize:11,color:C.mut,marginBottom:4}}>Base de datos</div>
+            <Card style={{marginTop:9}}>
+              <div style={{fontSize:13,fontWeight:500,marginBottom:10}}>Nueva tarea en Notion</div>
+              <input placeholder="Nombre de la tarea" value={ntTitle} onChange={e=>setNtTitle(e.target.value)} style={{...inp,marginBottom:9}}/>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:9}}>
+                <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Base de datos</div>
                   <select value={ntSrc} onChange={e=>setNtSrc(e.target.value)} style={inp}><option value="tareas">Trabajo</option><option value="entregas">Uni</option><option value="vendify">Vendify</option></select>
                 </div>
-                <div><div style={{fontSize:11,color:C.mut,marginBottom:4}}>Prioridad</div>
+                <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Prioridad</div>
                   <select value={ntPrio} onChange={e=>setNtPrio(e.target.value)} style={inp}><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>
                 </div>
               </div>
-              <div style={{marginBottom:12}}><div style={{fontSize:11,color:C.mut,marginBottom:4}}>Fecha (opcional)</div><input type="date" value={ntDate} onChange={e=>setNtDate(e.target.value)} style={inp}/></div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9}}>
+              <div style={{marginBottom:10}}><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Fecha (opcional)</div><input type="date" value={ntDate} onChange={e=>setNtDate(e.target.value)} style={inp}/></div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                 <Btn variant="outline" onClick={()=>{setShowAddT(false);setNtTitle('');setNtDate('')}} style={{width:'100%'}}>Cancelar</Btn>
                 <Btn variant="primary" disabled={!ntTitle||addingT} onClick={addTask} style={{width:'100%'}}>{addingT?'Guardando...':'Guardar'}</Btn>
               </div>
             </Card>
           ):(
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginTop:10}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:9}}>
               <Btn variant="ghost" onClick={()=>setShowAddT(true)} style={{width:'100%'}}>+ Nueva tarea</Btn>
               {tasks!==null&&<Btn variant="outline" onClick={fetchTasks} style={{width:'100%'}}>↻ Actualizar</Btn>}
             </div>
@@ -564,23 +559,23 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
 
         {/* ══ EVENTOS ══ */}
         {tab==='eventos'&&<>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-            <span style={{fontSize:17,fontWeight:500}}>Eventos AC</span>
-            {nEvts!==null&&!loadE&&<button onClick={fetchEvents} style={{background:'none',border:'none',color:C.mut,cursor:'pointer',padding:4,display:'flex'}}><Icon name="refresh" size={18} color={C.mut}/></button>}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+            <span style={{fontSize:16,fontWeight:500}}>Eventos AC</span>
+            {nEvts!==null&&!loadE&&<button onClick={fetchEvents} style={{background:'none',border:'none',color:C.mut,cursor:'pointer',padding:4,display:'flex'}}><Icon name="refresh" size={17} color={C.mut}/></button>}
           </div>
           {nEvts===null?(
-            <div style={{textAlign:'center',paddingTop:32}}>
-              <div style={{fontSize:32,marginBottom:12}}>🗓</div>
-              <div style={{fontSize:13,color:C.mut,marginBottom:16}}>Carga tus eventos desde Notion</div>
+            <div style={{textAlign:'center',paddingTop:28}}>
+              <div style={{fontSize:28,marginBottom:10}}>🗓</div>
+              <div style={{fontSize:13,color:C.mut,marginBottom:14}}>Carga tus eventos desde Notion</div>
               <Btn variant="primary" onClick={fetchEvents} style={{width:'100%'}}>Cargar eventos</Btn>
             </div>
-          ):loadE?(<div style={{textAlign:'center',padding:'40px 0',color:C.mut,fontSize:13}}>Cargando...</div>
-          ):nEvts.length===0?(<div style={{textAlign:'center',padding:28,color:C.mut,fontSize:13}}>No hay eventos próximos</div>
+          ):loadE?(<div style={{textAlign:'center',padding:'36px 0',color:C.mut,fontSize:13}}>Cargando...</div>
+          ):nEvts.length===0?(<div style={{textAlign:'center',padding:24,color:C.mut,fontSize:13}}>No hay eventos próximos</div>
           ):nEvts.map((e,i)=>(
-            <Card key={i} style={{marginBottom:9}}>
-              <div style={{fontSize:14,fontWeight:500,marginBottom:6}}>{e.title}</div>
-              {e.date&&<div style={{fontSize:12,color:C.mut,marginBottom:6}}>{e.date}</div>}
-              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            <Card key={i} style={{marginBottom:8}}>
+              <div style={{fontSize:14,fontWeight:500,marginBottom:5}}>{e.title}</div>
+              {e.date&&<div style={{fontSize:12,color:C.mut,marginBottom:5}}>{e.date}</div>}
+              <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
                 {e.status&&<Pill color={scol(e.status)}>{e.status}</Pill>}
                 {e.priority&&<Pill color={pcolor(e.priority)}>{e.priority}</Pill>}
               </div>
@@ -591,21 +586,21 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
         {/* ══ PERFIL ══ */}
         {tab==='perfil'&&<>
           <Sec>Hábitos — últimos 7 días</Sec>
-          <Card style={{marginBottom:14,overflowX:'auto'}}>
-            <div style={{display:'grid',gridTemplateColumns:'68px repeat(7,1fr)',gap:4,marginBottom:6,minWidth:290}}>
+          <Card style={{marginBottom:12,overflowX:'auto'}}>
+            <div style={{display:'grid',gridTemplateColumns:'64px repeat(7,1fr)',gap:3,marginBottom:5,minWidth:280}}>
               <div/>
               {labs7.map((l,i)=><div key={i} style={{textAlign:'center',fontSize:10,color:days7[i]===dateKey?C.grn:C.hint,fontWeight:days7[i]===dateKey?700:400}}>{l}</div>)}
             </div>
             {HABITS.map(h=>{
               let streak=0;for(let i=days7.length-1;i>=0;i--){if(habits[days7[i]]?.[h.id])streak++;else break}
               return(
-                <div key={h.id} style={{display:'grid',gridTemplateColumns:'68px repeat(7,1fr)',gap:4,marginBottom:4,alignItems:'center',minWidth:290}}>
+                <div key={h.id} style={{display:'grid',gridTemplateColumns:'64px repeat(7,1fr)',gap:3,marginBottom:4,alignItems:'center',minWidth:280}}>
                   <div style={{display:'flex',alignItems:'center',gap:3,overflow:'hidden'}}>
-                    <span style={{fontSize:11,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.label}</span>
+                    <span style={{fontSize:10,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.label}</span>
                     {streak>1&&<span style={{fontSize:9,color:C.grn,fontWeight:700,flexShrink:0}}>{streak}d</span>}
                   </div>
                   {days7.map((dk2,i)=>(
-                    <div key={i} onClick={()=>togH(h.id,dk2)} style={{height:22,borderRadius:5,cursor:'pointer',background:habits[dk2]?.[h.id]?C.grn:'rgba(255,255,255,0.05)',border:`0.5px solid ${habits[dk2]?.[h.id]?C.grn:'rgba(255,255,255,0.07)'}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    <div key={i} onClick={()=>togH(h.id,dk2)} style={{height:20,borderRadius:4,cursor:'pointer',background:habits[dk2]?.[h.id]?C.grn:'rgba(255,255,255,0.05)',border:`0.5px solid ${habits[dk2]?.[h.id]?C.grn:'rgba(255,255,255,0.07)'}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
                       {habits[dk2]?.[h.id]&&<span style={{color:'#000',fontSize:9,fontWeight:800}}>✓</span>}
                     </div>
                   ))}
@@ -618,23 +613,23 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
           {goals.map(g=>{
             const range=g.target-g.start;const pct=range===0?0:Math.min(100,Math.round(((g.current-g.start)/range)*100));
             return(
-              <Card key={g.id} style={{marginBottom:9}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:11}}>
-                  <div><Pill color={g.color}>{g.cat}</Pill><div style={{fontSize:13,fontWeight:500,marginTop:5}}>{g.label}</div></div>
+              <Card key={g.id} style={{marginBottom:8}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:9}}>
+                  <div><Pill color={g.color}>{g.cat}</Pill><div style={{fontSize:13,fontWeight:500,marginTop:4}}>{g.label}</div></div>
                   {editGid===g.id?(
                     <div style={{display:'flex',gap:5,alignItems:'center',flexShrink:0}}>
-                      <input type="number" value={editGval} onChange={e=>setEditGval(e.target.value)} style={{width:52,fontSize:13,padding:'5px 7px',borderRadius:7,border:`0.5px solid ${C.bor}`,background:C.surf2,color:C.txt,textAlign:'center'}} autoFocus/>
-                      <button onClick={()=>{saveG(goals.map(x=>x.id===g.id?{...x,current:parseFloat(editGval)||x.current}:x));setEditGid(null)}} style={{fontSize:13,padding:'5px 9px',background:C.grn,color:'#000',border:'none',borderRadius:7,cursor:'pointer',fontWeight:700}}>✓</button>
-                      <button onClick={()=>setEditGid(null)} style={{fontSize:13,padding:'5px 8px',background:'transparent',color:C.mut,border:`0.5px solid ${C.bor}`,borderRadius:7,cursor:'pointer'}}>✕</button>
+                      <input type="number" value={editGval} onChange={e=>setEditGval(e.target.value)} style={{width:50,fontSize:13,padding:'4px 6px',borderRadius:7,border:`0.5px solid ${C.bor}`,background:C.surf2,color:C.txt,textAlign:'center'}} autoFocus/>
+                      <button onClick={()=>{saveG(goals.map(x=>x.id===g.id?{...x,current:parseFloat(editGval)||x.current}:x));setEditGid(null)}} style={{fontSize:13,padding:'4px 8px',background:C.grn,color:'#000',border:'none',borderRadius:7,cursor:'pointer',fontWeight:700}}>✓</button>
+                      <button onClick={()=>setEditGid(null)} style={{fontSize:13,padding:'4px 7px',background:'transparent',color:C.mut,border:`0.5px solid ${C.bor}`,borderRadius:7,cursor:'pointer'}}>✕</button>
                     </div>
                   ):(
                     <div onClick={()=>{setEditGid(g.id);setEditGval(String(g.current))}} style={{cursor:'pointer',textAlign:'right',flexShrink:0}}>
-                      <span style={{fontSize:22,fontWeight:500}}>{g.current}</span>
+                      <span style={{fontSize:20,fontWeight:500}}>{g.current}</span>
                       <span style={{fontSize:11,color:C.mut}}>/{g.target} {g.unit}</span>
                     </div>
                   )}
                 </div>
-                <div style={{height:4,background:'rgba(255,255,255,0.07)',borderRadius:2,overflow:'hidden',marginBottom:5}}>
+                <div style={{height:3,background:'rgba(255,255,255,0.07)',borderRadius:2,overflow:'hidden',marginBottom:4}}>
                   <div style={{height:'100%',width:`${pct}%`,background:g.color,borderRadius:2}}/>
                 </div>
                 <div style={{fontSize:11,color:C.mut}}>{pct}% completado</div>
@@ -645,7 +640,7 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
           <Card style={{marginBottom:9}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
               <div>
-                <div style={{fontSize:13,fontWeight:500,marginBottom:2}}>Notificaciones</div>
+                <div style={{fontSize:13,fontWeight:500,marginBottom:1}}>Notificaciones</div>
                 <div style={{fontSize:11,color:C.mut}}>Aviso al inicio de cada bloque</div>
               </div>
               <Pill color={notifP==='granted'?C.grn:notifP==='denied'?C.red:C.amb}>
@@ -653,10 +648,10 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
               </Pill>
             </div>
             {notifP!=='granted'&&notifP!=='denied'&&(
-              <Btn variant="primary" onClick={()=>Notification.requestPermission().then(p=>setNotifP(p))} style={{width:'100%',marginTop:12}}>Activar notificaciones</Btn>
+              <Btn variant="primary" onClick={()=>Notification.requestPermission().then(p=>setNotifP(p))} style={{width:'100%',marginTop:10}}>Activar notificaciones</Btn>
             )}
             {notifP==='denied'&&(
-              <div style={{fontSize:11,color:C.mut,marginTop:10,lineHeight:1.5}}>
+              <div style={{fontSize:11,color:C.mut,marginTop:8,lineHeight:1.5}}>
                 Ajustes → Safari → esta página → Notificaciones → Permitir.
               </div>
             )}
@@ -665,12 +660,12 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
 
       </div>
 
-      {/* BOTTOM NAV */}
+      {/* ── BOTTOM NAV ── */}
       <div style={{borderTop:`0.5px solid ${C.bor}`,background:'#0C0C0C',display:'flex',flexShrink:0,paddingBottom:'env(safe-area-inset-bottom,6px)'}}>
         {[['hoy','Hoy','clock'],['semana','Semana','cal'],['tareas','Tareas','check'],['eventos','Eventos','list'],['perfil','Perfil','user']].map(([id,lbl,ico])=>(
-          <button key={id} onClick={()=>setTab(id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'9px 0',background:'none',border:'none',cursor:'pointer',color:tab===id?C.grn:'rgba(255,255,255,0.25)',fontFamily:'inherit'}}>
-            <Icon name={ico} size={21} color={tab===id?C.grn:'rgba(255,255,255,0.25)'} sw={tab===id?2:1.5}/>
-            <span style={{fontSize:10,fontWeight:tab===id?600:400}}>{lbl}</span>
+          <button key={id} onClick={()=>setTab(id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 0',background:'none',border:'none',cursor:'pointer',color:tab===id?C.grn:'rgba(255,255,255,0.25)',fontFamily:'inherit'}}>
+            <Icon name={ico} size={20} color={tab===id?C.grn:'rgba(255,255,255,0.25)'} sw={tab===id?2:1.5}/>
+            <span style={{fontSize:9,fontWeight:tab===id?600:400}}>{lbl}</span>
           </button>
         ))}
       </div>
