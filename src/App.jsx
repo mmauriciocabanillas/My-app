@@ -2,16 +2,24 @@ import { useState, useEffect, useRef } from "react"
 
 // ─── TOKENS ───────────────────────────────────────────────────────────────────
 const C = {
-  bg:'#080808', surf:'#111111', surf2:'#181818', surf3:'#202020',
+  bg:'#080808', surf:'#111111', surf2:'#181818',
   bor:'rgba(255,255,255,0.07)', bor2:'rgba(255,255,255,0.12)',
   txt:'#F5F5F5', mut:'rgba(255,255,255,0.38)', hint:'rgba(255,255,255,0.18)',
   grn:'#2DD48A', blu:'#5B9CF6', amb:'#F5A623', red:'#F06D6D', pur:'#9F7AEA',
 }
 
+// ─── STORAGE (localStorage, funciona en Vercel) ───────────────────────────────
+const S = {
+  get: key => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null } catch { return null } },
+  set: (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)) } catch {} },
+}
+
+// ─── SEMANA ───────────────────────────────────────────────────────────────────
 const DKS    = ['lun','mar','mie','jue','vie','sab','dom']
 const DNAMES = { lun:'Lunes', mar:'Martes', mie:'Miércoles', jue:'Jueves', vie:'Viernes', sab:'Sábado', dom:'Domingo' }
 const gdk    = (d = new Date()) => DKS[(d.getDay() + 6) % 7]
 
+// ─── HORARIO BASE ─────────────────────────────────────────────────────────────
 const SCHED_DEFAULT = {
   lun:[
     { id:'lun1', s:'14:00', e:'18:00', t:'uni', a:'Base de Datos' },
@@ -41,9 +49,9 @@ const SCHED_DEFAULT = {
 const BCOL  = { uni:C.blu, gym:C.pur, personal:C.amb }
 const BLBL  = { uni:'Universidad', gym:'Gym', personal:'Personal' }
 const BTYPES = [
-  { val:'uni', label:'Universidad', color:C.blu },
-  { val:'gym', label:'Gym',         color:C.pur },
-  { val:'personal', label:'Personal', color:C.amb },
+  { val:'uni',      label:'Universidad', color:C.blu },
+  { val:'gym',      label:'Gym',         color:C.pur },
+  { val:'personal', label:'Personal',    color:C.amb },
 ]
 
 const HABITS = [
@@ -57,6 +65,14 @@ const GOALS0 = [
   {id:'ciclo',cat:'Universidad', label:'Aprobar ciclo', unit:'%',  current:0,  target:100, start:0,  color:C.blu},
   {id:'ropa', cat:'Personal',    label:'Shopping S/800',unit:'%',  current:0,  target:100, start:0,  color:C.amb},
 ]
+
+// ─── NOTION DB IDs ────────────────────────────────────────────────────────────
+const DB = {
+  entregas: '312fa6d36749815592bef82e1b68cd97',
+  tareas:   '312fa6d367498156a513c581584086f4',
+  vendify:  '323fa6d3674980dd97e9cd1063089d0d',
+  eventos:  '314fa6d3674980f0b60be274e1a5d12a',
+}
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 const pt    = s => { if(!s)return 0; const[h,m]=s.split(':').map(Number); return h*60+(m||0) }
@@ -74,19 +90,32 @@ const dayKeyForDK = (dk, ref=new Date()) => {
 const pcolor = p => { if(!p)return C.mut; const l=p.toLowerCase(); if(l.includes('alta')||l.includes('high'))return C.red; if(l.includes('media'))return C.amb; return C.grn }
 const scol   = s => { if(!s)return C.mut; const l=s.toLowerCase(); if(l.includes('complet'))return C.grn; if(l.includes('edic')||l.includes('progress'))return C.blu; if(l.includes('agenda'))return C.amb; return C.mut }
 
-// ─── NOTION ───────────────────────────────────────────────────────────────────
-const callNotion = async (prompt, maxT=1800) => {
-  const res = await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514', max_tokens:maxT,
-      messages:[{role:'user',content:prompt}],
-      mcp_servers:[{type:'url',url:'https://mcp.notion.com/mcp',name:'notion'}]
-    })
+// ─── NOTION API ───────────────────────────────────────────────────────────────
+const notionQuery = async (dbId) => {
+  const res = await fetch('/api/notion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint: `databases/${dbId}/query`, body: { page_size: 50 } }),
   })
-  const d = await res.json()
-  return (d.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('')
+  return res.json()
 }
+const notionCreate = async (dbId, properties) => {
+  const res = await fetch('/api/notion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint: 'pages', body: { parent: { database_id: dbId }, properties } }),
+  })
+  return res.json()
+}
+
+// ─── NOTION PARSERS ───────────────────────────────────────────────────────────
+const getTitle  = (props, key='Nombre') => props[key]?.title?.map(t=>t.plain_text).join('') || ''
+const getDate   = props => { for(const k of ['Fecha','fecha']) if(props[k]?.date?.start) return props[k].date.start.slice(0,10); return null }
+const getSel    = (props, key) => props[key]?.select?.name || props[key]?.status?.name || null
+
+const parseEntregas = rs => rs.map(p=>({ title:getTitle(p.properties,'Nombre'), date:getDate(p.properties), status:getSel(p.properties,'Estado'), priority:null, source:'entregas', area:getSel(p.properties,'Clase') })).filter(t=>t.title)
+const parseTareas   = (rs,src) => rs.map(p=>({ title:getTitle(p.properties,'Nombre'), date:getDate(p.properties), status:getSel(p.properties,'Status'), priority:getSel(p.properties,'Prioridad'), source:src, area:getSel(p.properties,'Area') })).filter(t=>t.title)
+const parseEventos  = rs => rs.map(p=>({ title:getTitle(p.properties,'Nombre'), date:getDate(p.properties), status:getSel(p.properties,'Status'), priority:getSel(p.properties,'Prioridad') })).filter(e=>e.title)
 
 // ─── ICONS ────────────────────────────────────────────────────────────────────
 const Icon = ({name,size=22,color='currentColor',sw=1.7}) => {
@@ -139,8 +168,7 @@ function EditSchedulePanel({sched,onSave,onClose}) {
   const startAdd  = dk => { setAdding(dk); setNewBlk({s:'',e:'',t:'uni',a:''}) }
   const confirmAdd = () => {
     if(!newBlk.s||!newBlk.e||!newBlk.a) return
-    const blk = {...newBlk,id:uid()}
-    setLocal(p=>({...p,[adding]:[...(p[adding]||[]),blk].sort((a,b)=>pt(a.s)-pt(b.s))}))
+    setLocal(p=>({...p,[adding]:[...(p[adding]||[]),{...newBlk,id:uid()}].sort((a,b)=>pt(a.s)-pt(b.s))}))
     setAdding(null)
   }
 
@@ -153,21 +181,16 @@ function EditSchedulePanel({sched,onSave,onClose}) {
         <span style={{fontSize:15,fontWeight:600,flex:1}}>Editar horario</span>
         <Btn variant="primary" onClick={()=>onSave(local)} style={{padding:'7px 16px',fontSize:12}}>Guardar</Btn>
       </div>
-
       <div style={{flex:1,overflowY:'auto',padding:'12px 16px',WebkitOverflowScrolling:'touch'}}>
         {DKS.map(dk=>(
           <div key={dk} style={{marginBottom:18}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:7}}>
-              <span style={{fontSize:13,fontWeight:600,color:C.txt}}>{DNAMES[dk]}</span>
+              <span style={{fontSize:13,fontWeight:600}}>{DNAMES[dk]}</span>
               <button onClick={()=>startAdd(dk)} style={{background:'none',border:'none',color:C.grn,cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontSize:11,fontWeight:600,fontFamily:'inherit'}}>
                 <Icon name="plus" size={12} color={C.grn}/> Agregar
               </button>
             </div>
-
-            {(local[dk]||[]).length===0&&(
-              <div style={{fontSize:12,color:C.hint,padding:'4px 0'}}>Día libre</div>
-            )}
-
+            {(local[dk]||[]).length===0&&<div style={{fontSize:12,color:C.hint,padding:'4px 0'}}>Día libre</div>}
             {[...(local[dk]||[])].sort((a,b)=>pt(a.s)-pt(b.s)).map(b=>(
               <div key={b.id} style={{display:'flex',alignItems:'center',gap:9,padding:'8px 11px',background:C.surf,borderRadius:9,border:`0.5px solid ${C.bor}`,marginBottom:5}}>
                 <div style={{width:3,height:26,borderRadius:2,background:BCOL[b.t]||C.amb,flexShrink:0}}/>
@@ -181,20 +204,13 @@ function EditSchedulePanel({sched,onSave,onClose}) {
                 </button>
               </div>
             ))}
-
             {adding===dk&&(
               <div style={{background:C.surf2,borderRadius:10,padding:'11px 12px',border:`0.5px solid ${C.bor2}`,marginTop:5}}>
                 <div style={{fontSize:12,fontWeight:500,color:C.grn,marginBottom:9}}>Nuevo bloque — {DNAMES[dk]}</div>
                 <input placeholder="Nombre del bloque" value={newBlk.a} onChange={e=>setNewBlk(p=>({...p,a:e.target.value}))} style={{...inp,marginBottom:8}}/>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
-                  <div>
-                    <div style={{fontSize:10,color:C.mut,marginBottom:3}}>Inicio</div>
-                    <input type="time" value={newBlk.s} onChange={e=>setNewBlk(p=>({...p,s:e.target.value}))} style={inp}/>
-                  </div>
-                  <div>
-                    <div style={{fontSize:10,color:C.mut,marginBottom:3}}>Fin</div>
-                    <input type="time" value={newBlk.e} onChange={e=>setNewBlk(p=>({...p,e:e.target.value}))} style={inp}/>
-                  </div>
+                  <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Inicio</div><input type="time" value={newBlk.s} onChange={e=>setNewBlk(p=>({...p,s:e.target.value}))} style={inp}/></div>
+                  <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Fin</div><input type="time" value={newBlk.e} onChange={e=>setNewBlk(p=>({...p,e:e.target.value}))} style={inp}/></div>
                 </div>
                 <div style={{marginBottom:10}}>
                   <div style={{fontSize:10,color:C.mut,marginBottom:3}}>Tipo</div>
@@ -210,10 +226,7 @@ function EditSchedulePanel({sched,onSave,onClose}) {
             )}
           </div>
         ))}
-
-        <Btn variant="ghost" onClick={()=>onSave(SCHED_DEFAULT)} style={{width:'100%',marginTop:4}}>
-          Restaurar horario original
-        </Btn>
+        <Btn variant="ghost" onClick={()=>onSave(SCHED_DEFAULT)} style={{width:'100%',marginTop:4}}>Restaurar horario original</Btn>
       </div>
     </div>
   )
@@ -221,43 +234,40 @@ function EditSchedulePanel({sched,onSave,onClose}) {
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function MyApp() {
-  const [now,setNow]               = useState(new Date())
-  const [tab,setTab]               = useState('hoy')
-  const [selDay,setSelDay]         = useState(null)
-  const [habits,setHabits]         = useState({})
-  const [goals,setGoals]           = useState(GOALS0)
-  const [localEvts,setLocalEvts]   = useState({})
-  const [sched,setSched]           = useState(SCHED_DEFAULT)
+  // ── State — inicializado directo desde localStorage ──────────────────────
+  const [now,setNow]           = useState(new Date())
+  const [tab,setTab]           = useState('hoy')
+  const [selDay,setSelDay]     = useState(null)
+  const [habits,setHabits]     = useState(() => S.get('ma_habits') || {})
+  const [goals,setGoals]       = useState(() => S.get('ma_goals')  || GOALS0)
+  const [localEvts,setLocalEvts] = useState(() => S.get('ma_evts') || {})
+  const [sched,setSched]       = useState(() => S.get('ma_sched')  || SCHED_DEFAULT)
   const [editingSched,setEditingSched] = useState(false)
-  const [editGid,setEditGid]       = useState(null)
-  const [editGval,setEditGval]     = useState('')
+  const [editGid,setEditGid]   = useState(null)
+  const [editGval,setEditGval] = useState('')
   const [showAddEvt,setShowAddEvt] = useState(false)
-  const [evtTitle,setEvtTitle]     = useState('')
-  const [evtStart,setEvtStart]     = useState('')
-  const [evtEnd,setEvtEnd]         = useState('')
-  const [tasks,setTasks]           = useState(null)
-  const [loadT,setLoadT]           = useState(false)
-  const [tFilter,setTFilter]       = useState('all')
-  const [showAddT,setShowAddT]     = useState(false)
-  const [ntTitle,setNtTitle]       = useState('')
-  const [ntSrc,setNtSrc]           = useState('tareas')
-  const [ntPrio,setNtPrio]         = useState('Media')
-  const [ntDate,setNtDate]         = useState('')
-  const [addingT,setAddingT]       = useState(false)
-  const [nEvts,setNEvts]           = useState(null)
-  const [loadE,setLoadE]           = useState(false)
-  const [notifP,setNotifP]         = useState(typeof Notification!=='undefined'?Notification.permission:'denied')
+  const [evtTitle,setEvtTitle] = useState('')
+  const [evtStart,setEvtStart] = useState('')
+  const [evtEnd,setEvtEnd]     = useState('')
+  const [tasks,setTasks]       = useState(null)
+  const [loadT,setLoadT]       = useState(false)
+  const [tFilter,setTFilter]   = useState('all')
+  const [showAddT,setShowAddT] = useState(false)
+  const [ntTitle,setNtTitle]   = useState('')
+  const [ntSrc,setNtSrc]       = useState('tareas')
+  const [ntPrio,setNtPrio]     = useState('Media')
+  const [ntDate,setNtDate]     = useState('')
+  const [addingT,setAddingT]   = useState(false)
+  const [nEvts,setNEvts]       = useState(null)
+  const [loadE,setLoadE]       = useState(false)
+  const [notifP,setNotifP]     = useState(typeof Notification!=='undefined'?Notification.permission:'denied')
   const lastNotif = useRef(null)
 
+  // Reloj
   useEffect(()=>{ const i=setInterval(()=>setNow(new Date()),1000); return()=>clearInterval(i) },[])
 
+  // Notificaciones
   useEffect(()=>{
-    ;(async()=>{
-      try{const r=await window.storage.get('ma5_h');if(r)setHabits(JSON.parse(r.value))}catch{}
-      try{const r=await window.storage.get('ma5_g');if(r)setGoals(JSON.parse(r.value))}catch{}
-      try{const r=await window.storage.get('ma5_e');if(r)setLocalEvts(JSON.parse(r.value))}catch{}
-      try{const r=await window.storage.get('ma5_s');if(r)setSched(JSON.parse(r.value))}catch{}
-    })()
     if(typeof Notification!=='undefined'&&Notification.permission==='default'){
       Notification.requestPermission().then(p=>setNotifP(p))
     }
@@ -266,38 +276,34 @@ export default function MyApp() {
   useEffect(()=>{
     const fire = () => {
       if(typeof Notification==='undefined'||Notification.permission!=='granted') return
-      const n = new Date()
-      const m = n.getHours()*60+n.getMinutes()
-      const dk2 = gdk(n)
-      const blk = (sched[dk2]||[]).find(b=>{ const s=pt(b.s),e=pt(b.e); return m>=s&&m<e })
-      const key = blk ? `${ldk(n)}-${blk.id}` : `${ldk(n)}-none`
-      if(blk&&lastNotif.current!==key){
-        lastNotif.current=key
-        try{ new Notification('My App — '+blk.a,{body:fmt12(blk.s)+' – '+fmt12(blk.e)}) }catch{}
-      } else if(!blk){ lastNotif.current=key }
+      const n=new Date(), m=n.getHours()*60+n.getMinutes(), dk2=gdk(n)
+      const blk=(sched[dk2]||[]).find(b=>{ const s=pt(b.s),e=pt(b.e); return m>=s&&m<e })
+      const key=blk?`${ldk(n)}-${blk.id}`:`${ldk(n)}-none`
+      if(blk&&lastNotif.current!==key){ lastNotif.current=key; try{new Notification('My App — '+blk.a,{body:fmt12(blk.s)+' – '+fmt12(blk.e)})}catch{} }
+      else if(!blk){ lastNotif.current=key }
     }
-    fire()
-    const i = setInterval(fire,20000)
-    return()=>clearInterval(i)
+    fire(); const i=setInterval(fire,20000); return()=>clearInterval(i)
   },[sched])
 
-  const saveH = async h=>{setHabits(h);try{await window.storage.set('ma5_h',JSON.stringify(h))}catch{}}
-  const saveG = async g=>{setGoals(g);try{await window.storage.set('ma5_g',JSON.stringify(g))}catch{}}
-  const saveE = async e=>{setLocalEvts(e);try{await window.storage.set('ma5_e',JSON.stringify(e))}catch{}}
-  const saveS = async s=>{setSched(s);try{await window.storage.set('ma5_s',JSON.stringify(s))}catch{}}
-  const togH  = (hid,dk2=dateKey)=>{const c=habits[dk2]||{};saveH({...habits,[dk2]:{...c,[hid]:!c[hid]}})}
+  // ── Persist helpers — guardan en localStorage siempre ────────────────────
+  const saveH = h => { setHabits(h);    S.set('ma_habits', h) }
+  const saveG = g => { setGoals(g);     S.set('ma_goals',  g) }
+  const saveE = e => { setLocalEvts(e); S.set('ma_evts',   e) }
+  const saveS = s => { setSched(s);     S.set('ma_sched',  s) }
+  const togH  = (hid, dk2=dateKey) => { const c=habits[dk2]||{}; saveH({...habits,[dk2]:{...c,[hid]:!c[hid]}}) }
 
-  const dk      = gdk(now)
-  const dateKey = ldk(now)
-  const nowM    = now.getHours()*60+now.getMinutes()
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const dk        = gdk(now)
+  const dateKey   = ldk(now)
+  const nowM      = now.getHours()*60+now.getMinutes()
   const activeDay = selDay||dk
   const activeDK  = dayKeyForDK(activeDay,now)
   const todayH    = habits[dateKey]||{}
   const hDone     = HABITS.filter(h=>todayH[h.id]).length
 
-  const todayAll = [...(sched[dk]||[]),...(localEvts[dateKey]||[])].sort((a,b)=>pt(a.s)-pt(b.s))
-  const curBlock = todayAll.find(b=>{const s=pt(b.s),e=pt(b.e);return nowM>=s&&nowM<e})
-  const upcoming = todayAll.filter(b=>pt(b.s)>nowM).slice(0,3)
+  const todayAll  = [...(sched[dk]||[]),...(localEvts[dateKey]||[])].sort((a,b)=>pt(a.s)-pt(b.s))
+  const curBlock  = todayAll.find(b=>{const s=pt(b.s),e=pt(b.e);return nowM>=s&&nowM<e})
+  const upcoming  = todayAll.filter(b=>pt(b.s)>nowM).slice(0,3)
 
   const activeAll = [
     ...(sched[activeDay]||[]).map(b=>({...b,_fixed:true})),
@@ -308,7 +314,7 @@ export default function MyApp() {
     : -1
 
   const ftasks  = (tasks||[]).filter(t=>tFilter==='all'||t.source===tFilter)
-  const tmrw    = new Date(now);tmrw.setDate(tmrw.getDate()+1)
+  const tmrw    = new Date(now); tmrw.setDate(tmrw.getDate()+1)
   const tmrwKey = ldk(tmrw)
   const tToday  = ftasks.filter(t=>t.date===dateKey)
   const tTmrw   = ftasks.filter(t=>t.date===tmrwKey)
@@ -318,36 +324,34 @@ export default function MyApp() {
   const days7 = Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-(6-i));return ldk(d)})
   const labs7 = days7.map(dk2=>new Date(dk2+'T12:00:00').toLocaleDateString('es-PE',{weekday:'short'}).slice(0,2).toUpperCase())
 
-  const fetchTasks = async()=>{
+  // ── Notion fetchers ───────────────────────────────────────────────────────
+  const fetchTasks = async () => {
     setLoadT(true)
-    try{
-      const txt=await callNotion(`Search my Notion workspace. Query these 3 databases:
-1. "Entregas" (columns: Nombre, Estado, Fecha, Tipo, Clase) — university assignments
-2. "Tareas" (columns: Status, Nombre, Fecha, Prioridad, Area) — work tasks
-3. "Tareas Vendify" (columns: Status, Nombre, Fecha, Prioridad, Area) — startup tasks
-Return ONLY raw JSON array, no markdown, no backticks.
-Each item: {"title":string,"date":string_or_null,"priority":string_or_null,"status":string_or_null,"source":"entregas"_or_"tareas"_or_"vendify","area":string_or_null}
-Dates ISO YYYY-MM-DD. Max 40 items. Return [] if nothing found.`)
-      setTasks(JSON.parse(txt.replace(/```json|```/g,'').trim()))
-    }catch{setTasks([])}
+    try {
+      const [rE,rT,rV] = await Promise.all([notionQuery(DB.entregas),notionQuery(DB.tareas),notionQuery(DB.vendify)])
+      setTasks([...parseEntregas(rE.results||[]),...parseTareas(rT.results||[],'tareas'),...parseTareas(rV.results||[],'vendify')])
+    } catch { setTasks([]) }
     setLoadT(false)
   }
-  const fetchEvents = async()=>{
+  const fetchEvents = async () => {
     setLoadE(true)
-    try{
-      const txt=await callNotion(`Search my Notion "Eventos AC" database (columns: Nombre, Fecha, Prioridad, Status, Assignee).
-Return ONLY raw JSON array, no markdown, no backticks.
-Each item: {"title":string,"date":string_or_null,"priority":string_or_null,"status":string_or_null}
-Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
-      setNEvts(JSON.parse(txt.replace(/```json|```/g,'').trim()))
-    }catch{setNEvts([])}
+    try { const r=await notionQuery(DB.eventos); setNEvts(parseEventos(r.results||[])) }
+    catch { setNEvts([]) }
     setLoadE(false)
   }
-  const addTask = async()=>{
-    if(!ntTitle)return;setAddingT(true)
-    const db=ntSrc==='entregas'?'Entregas':ntSrc==='vendify'?'Tareas Vendify':'Tareas'
-    try{await callNotion(`Create a new page in my Notion "${db}" database: Nombre="${ntTitle}", Prioridad="${ntPrio}"${ntDate?`, Fecha="${ntDate}"`:''}.`,300)}catch{}
-    setAddingT(false);setShowAddT(false);setNtTitle('');setNtDate('');fetchTasks()
+  const addTask = async () => {
+    if(!ntTitle) return; setAddingT(true)
+    const dbId = ntSrc==='entregas'?DB.entregas:ntSrc==='vendify'?DB.vendify:DB.tareas
+    const props = {
+      Nombre: { title:[{text:{content:ntTitle}}] },
+      ...(ntSrc==='entregas'
+        ? { Estado: { select:{name:ntPrio} } }
+        : { Prioridad:{select:{name:ntPrio}}, Status:{status:{name:'En edición'}} }
+      ),
+      ...(ntDate ? { Fecha:{date:{start:ntDate}} } : {}),
+    }
+    try { await notionCreate(dbId, props) } catch {}
+    setAddingT(false); setShowAddT(false); setNtTitle(''); setNtDate(''); fetchTasks()
   }
 
   const inp = {width:'100%',padding:'9px 12px',borderRadius:9,border:`0.5px solid ${C.bor}`,background:C.surf2,color:C.txt,fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}
@@ -357,32 +361,22 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
   return (
     <div style={{background:C.bg,color:C.txt,height:'100dvh',fontFamily:'-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif',display:'flex',flexDirection:'column',overflow:'hidden',maxWidth:430,margin:'0 auto',position:'relative'}}>
 
-      {editingSched&&(
-        <EditSchedulePanel
-          sched={sched}
-          onSave={s=>{saveS(s);setEditingSched(false)}}
-          onClose={()=>setEditingSched(false)}
-        />
-      )}
+      {editingSched&&<EditSchedulePanel sched={sched} onSave={s=>{saveS(s);setEditingSched(false)}} onClose={()=>setEditingSched(false)}/>}
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <div style={{padding:'10px 18px 9px',borderBottom:`0.5px solid ${C.bor}`,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0,background:C.bg}}>
         <div>
           <div style={{fontSize:9,color:C.hint,letterSpacing:'0.14em',textTransform:'uppercase',marginBottom:1}}>My App</div>
           <div style={{fontSize:18,fontWeight:600,letterSpacing:'-0.02em'}}>Mauricio</div>
         </div>
-        {/* Semana: Editar en el slot derecho. Resto: vacío */}
         {tab==='semana'&&(
-          <button
-            onClick={()=>setEditingSched(true)}
-            style={{display:'flex',alignItems:'center',gap:5,background:'transparent',border:`0.5px solid ${C.bor}`,borderRadius:8,padding:'6px 11px',color:C.mut,cursor:'pointer',fontSize:11,fontFamily:'inherit',whiteSpace:'nowrap'}}
-          >
+          <button onClick={()=>setEditingSched(true)} style={{display:'flex',alignItems:'center',gap:5,background:'transparent',border:`0.5px solid ${C.bor}`,borderRadius:8,padding:'6px 11px',color:C.mut,cursor:'pointer',fontSize:11,fontFamily:'inherit',whiteSpace:'nowrap'}}>
             <Icon name="edit" size={12} color={C.mut}/> Editar
           </button>
         )}
       </div>
 
-      {/* ── CONTENT ── */}
+      {/* CONTENT */}
       <div style={{flex:1,overflowY:'auto',padding:'13px 16px',WebkitOverflowScrolling:'touch'}}>
 
         {/* ══ HOY ══ */}
@@ -450,7 +444,6 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
 
         {/* ══ SEMANA ══ */}
         {tab==='semana'&&<>
-          {/* Solo los pills de días, sin botón Editar (ya está en el header) */}
           <div style={{display:'flex',gap:5,overflowX:'auto',marginBottom:11,paddingBottom:2,WebkitOverflowScrolling:'touch'}}>
             {DKS.map(d=>(
               <button key={d} onClick={()=>setSelDay(d)} style={{flexShrink:0,padding:'6px 10px',borderRadius:20,cursor:'pointer',border:`0.5px solid ${activeDay===d?C.grn:C.bor}`,background:activeDay===d?`${C.grn}15`:'transparent',color:activeDay===d?C.grn:C.mut,fontSize:12,fontWeight:activeDay===d?600:400,fontFamily:'inherit'}}>
@@ -458,28 +451,25 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
               </button>
             ))}
           </div>
-
           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
             <span style={{fontSize:16,fontWeight:500}}>{DNAMES[activeDay]}</span>
             {activeDay===dk&&<Pill color={C.grn}>hoy</Pill>}
           </div>
-
-          {activeAll.length===0?(
-            <Card style={{textAlign:'center'}}><span style={{fontSize:13,color:C.mut}}>Día libre 🎉</span></Card>
-          ):activeAll.map((b,i)=>(
-            <div key={b.id||i} style={{display:'flex',alignItems:'center',gap:11,padding:aCurIdx===i?'9px 12px':'8px 4px',background:aCurIdx===i?`${BCOL[b.t]||C.grn}10`:'transparent',borderBottom:`0.5px solid ${C.bor}`,borderRadius:aCurIdx===i?10:0,marginBottom:aCurIdx===i?2:0}}>
-              <div style={{width:2,height:28,borderRadius:2,background:BCOL[b.t]||C.amb,flexShrink:0}}/>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:aCurIdx===i?500:400}}>{b.a}</div>
-                <div style={{fontSize:11,color:C.mut,marginTop:1}}>{fmt12(b.s)} – {fmt12(b.e)}</div>
+          {activeAll.length===0
+            ?<Card style={{textAlign:'center'}}><span style={{fontSize:13,color:C.mut}}>Día libre 🎉</span></Card>
+            :activeAll.map((b,i)=>(
+              <div key={b.id||i} style={{display:'flex',alignItems:'center',gap:11,padding:aCurIdx===i?'9px 12px':'8px 4px',background:aCurIdx===i?`${BCOL[b.t]||C.grn}10`:'transparent',borderBottom:`0.5px solid ${C.bor}`,borderRadius:aCurIdx===i?10:0,marginBottom:aCurIdx===i?2:0}}>
+                <div style={{width:2,height:28,borderRadius:2,background:BCOL[b.t]||C.amb,flexShrink:0}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:aCurIdx===i?500:400}}>{b.a}</div>
+                  <div style={{fontSize:11,color:C.mut,marginTop:1}}>{fmt12(b.s)} – {fmt12(b.e)}</div>
+                </div>
+                <Pill color={BCOL[b.t]||C.amb}>{BLBL[b.t]||'Personal'}</Pill>
+                {!b._fixed&&(
+                  <button onClick={()=>{const evts={...localEvts};evts[activeDK]=(evts[activeDK]||[]).filter(e=>e.id!==b.id);saveE(evts)}} style={{background:'none',border:'none',color:C.mut,cursor:'pointer',fontSize:16,padding:'0 5px',lineHeight:1}}>×</button>
+                )}
               </div>
-              <Pill color={BCOL[b.t]||C.amb}>{BLBL[b.t]||'Personal'}</Pill>
-              {!b._fixed&&(
-                <button onClick={()=>{const evts={...localEvts};evts[activeDK]=(evts[activeDK]||[]).filter(e=>e.id!==b.id);saveE(evts)}} style={{background:'none',border:'none',color:C.mut,cursor:'pointer',fontSize:16,padding:'0 5px',lineHeight:1}}>×</button>
-              )}
-            </div>
           ))}
-
           {showAddEvt?(
             <Card style={{marginTop:11}}>
               <div style={{fontSize:13,fontWeight:500,marginBottom:10}}>Nuevo evento personal</div>
@@ -490,7 +480,12 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                 <Btn variant="outline" onClick={()=>{setShowAddEvt(false);setEvtTitle('');setEvtStart('');setEvtEnd('')}} style={{width:'100%'}}>Cancelar</Btn>
-                <Btn variant="primary" onClick={()=>{if(!evtTitle||!evtStart||!evtEnd)return;const evts={...localEvts};evts[activeDK]=[...(evts[activeDK]||[]),{id:uid(),s:evtStart,e:evtEnd,a:evtTitle}];saveE(evts);setShowAddEvt(false);setEvtTitle('');setEvtStart('');setEvtEnd('')}} style={{width:'100%'}}>Agregar</Btn>
+                <Btn variant="primary" onClick={()=>{
+                  if(!evtTitle||!evtStart||!evtEnd)return
+                  const evts={...localEvts}
+                  evts[activeDK]=[...(evts[activeDK]||[]),{id:uid(),s:evtStart,e:evtEnd,a:evtTitle}]
+                  saveE(evts);setShowAddEvt(false);setEvtTitle('');setEvtStart('');setEvtEnd('')
+                }} style={{width:'100%'}}>Agregar</Btn>
               </div>
             </Card>
           ):<Btn variant="ghost" onClick={()=>setShowAddEvt(true)} style={{width:'100%',marginTop:11}}>+ Agregar evento personal</Btn>}
@@ -503,11 +498,10 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
               <button key={k} onClick={()=>setTFilter(k)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,cursor:'pointer',border:`0.5px solid ${tFilter===k?C.grn:C.bor}`,background:tFilter===k?`${C.grn}15`:'transparent',color:tFilter===k?C.grn:C.mut,fontSize:12,fontWeight:tFilter===k?600:400,fontFamily:'inherit'}}>{l}</button>
             ))}
           </div>
-
           {tasks===null?(
             <div style={{textAlign:'center',paddingTop:28}}>
               <div style={{fontSize:28,marginBottom:10}}>📋</div>
-              <div style={{fontSize:13,color:C.mut,marginBottom:14,lineHeight:1.6}}>Conecta Notion para ver tus tareas</div>
+              <div style={{fontSize:13,color:C.mut,marginBottom:14,lineHeight:1.6}}>Carga tus tareas desde Notion</div>
               <Btn variant="primary" onClick={fetchTasks} style={{width:'100%'}}>Cargar tareas de Notion</Btn>
             </div>
           ):loadT?(
@@ -530,17 +524,24 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
             ))}
             {ftasks.length===0&&<div style={{textAlign:'center',padding:24,color:C.mut,fontSize:13}}>Sin tareas en esta categoría</div>}
           </>}
-
           {showAddT?(
             <Card style={{marginTop:9}}>
               <div style={{fontSize:13,fontWeight:500,marginBottom:10}}>Nueva tarea en Notion</div>
               <input placeholder="Nombre de la tarea" value={ntTitle} onChange={e=>setNtTitle(e.target.value)} style={{...inp,marginBottom:9}}/>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:9}}>
                 <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Base de datos</div>
-                  <select value={ntSrc} onChange={e=>setNtSrc(e.target.value)} style={inp}><option value="tareas">Trabajo</option><option value="entregas">Uni</option><option value="vendify">Vendify</option></select>
+                  <select value={ntSrc} onChange={e=>setNtSrc(e.target.value)} style={inp}>
+                    <option value="tareas">Trabajo</option>
+                    <option value="entregas">Uni</option>
+                    <option value="vendify">Vendify</option>
+                  </select>
                 </div>
                 <div><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Prioridad</div>
-                  <select value={ntPrio} onChange={e=>setNtPrio(e.target.value)} style={inp}><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>
+                  <select value={ntPrio} onChange={e=>setNtPrio(e.target.value)} style={inp}>
+                    <option value="Alta">Alta</option>
+                    <option value="Media">Media</option>
+                    <option value="Baja">Baja</option>
+                  </select>
                 </div>
               </div>
               <div style={{marginBottom:10}}><div style={{fontSize:10,color:C.mut,marginBottom:3}}>Fecha (opcional)</div><input type="date" value={ntDate} onChange={e=>setNtDate(e.target.value)} style={inp}/></div>
@@ -592,7 +593,7 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
               {labs7.map((l,i)=><div key={i} style={{textAlign:'center',fontSize:10,color:days7[i]===dateKey?C.grn:C.hint,fontWeight:days7[i]===dateKey?700:400}}>{l}</div>)}
             </div>
             {HABITS.map(h=>{
-              let streak=0;for(let i=days7.length-1;i>=0;i--){if(habits[days7[i]]?.[h.id])streak++;else break}
+              let streak=0; for(let i=days7.length-1;i>=0;i--){if(habits[days7[i]]?.[h.id])streak++;else break}
               return(
                 <div key={h.id} style={{display:'grid',gridTemplateColumns:'64px repeat(7,1fr)',gap:3,marginBottom:4,alignItems:'center',minWidth:280}}>
                   <div style={{display:'flex',alignItems:'center',gap:3,overflow:'hidden'}}>
@@ -611,7 +612,7 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
 
           <Sec>Metas</Sec>
           {goals.map(g=>{
-            const range=g.target-g.start;const pct=range===0?0:Math.min(100,Math.round(((g.current-g.start)/range)*100));
+            const range=g.target-g.start; const pct=range===0?0:Math.min(100,Math.round(((g.current-g.start)/range)*100))
             return(
               <Card key={g.id} style={{marginBottom:8}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:9}}>
@@ -651,16 +652,14 @@ Dates ISO YYYY-MM-DD. Max 20 items. Return [] if nothing.`)
               <Btn variant="primary" onClick={()=>Notification.requestPermission().then(p=>setNotifP(p))} style={{width:'100%',marginTop:10}}>Activar notificaciones</Btn>
             )}
             {notifP==='denied'&&(
-              <div style={{fontSize:11,color:C.mut,marginTop:8,lineHeight:1.5}}>
-                Ajustes → Safari → esta página → Notificaciones → Permitir.
-              </div>
+              <div style={{fontSize:11,color:C.mut,marginTop:8,lineHeight:1.5}}>Ajustes → Safari → esta página → Notificaciones → Permitir.</div>
             )}
           </Card>
         </>}
 
       </div>
 
-      {/* ── BOTTOM NAV ── */}
+      {/* BOTTOM NAV */}
       <div style={{borderTop:`0.5px solid ${C.bor}`,background:'#0C0C0C',display:'flex',flexShrink:0,paddingBottom:'env(safe-area-inset-bottom,6px)'}}>
         {[['hoy','Hoy','clock'],['semana','Semana','cal'],['tareas','Tareas','check'],['eventos','Eventos','list'],['perfil','Perfil','user']].map(([id,lbl,ico])=>(
           <button key={id} onClick={()=>setTab(id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 0',background:'none',border:'none',cursor:'pointer',color:tab===id?C.grn:'rgba(255,255,255,0.25)',fontFamily:'inherit'}}>
