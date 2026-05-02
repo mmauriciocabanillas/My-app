@@ -327,8 +327,8 @@ export default function MyApp(){
   const [habits,setHabits]         = useState(()=>S.get('ma_habits')||{})
   const [habitList,setHabitList]   = useState(()=>S.get('ma_habit_list')||HABITS_DEFAULT)
   const [goals,setGoals]           = useState(()=>S.get('ma_goals')||GOALS0)
-  const [ciPhases,setCiPhases]     = useState(()=>S.get('ma_ci')||{})
-  const [ciCycles,setCiCycles]     = useState(()=>S.get('ma_ci_cycles')||['C1'])
+  const [ciPhases,setCiPhases]     = useState(()=>S.get('ma_ci_v2')||{})
+  const [ciCycles,setCiCycles]     = useState(()=>S.get('ma_ci_cycles_v2')||['C1'])
   const [ciExpanded,setCiExpanded] = useState(false)
   const [finance,setFinance]       = useState(()=>S.get('ma_finance')||{balance:200,initial:200,history:[]})
   const [localEvts,setLocalEvts]   = useState(()=>S.get('ma_evts')||{})
@@ -407,8 +407,8 @@ export default function MyApp(){
   const saveH  = h  => { setHabits(h);    S.set('ma_habits',h) }
   const saveHL = hl => { setHabitList(hl);S.set('ma_habit_list',hl) }
   const saveG  = g  => { setGoals(g);     S.set('ma_goals',g) }
-  const saveCI = ci => { setCiPhases(ci); S.set('ma_ci',ci) }
-  const saveCC = cc => { setCiCycles(cc); S.set('ma_ci_cycles',cc) }
+  const saveCI = ci => { setCiPhases(ci); S.set('ma_ci_v2',ci) }
+  const saveCC = cc => { setCiCycles(cc); S.set('ma_ci_cycles_v2',cc) }
   const saveF  = f  => { setFinance(f);   S.set('ma_finance',f) }
   const saveE  = e  => { setLocalEvts(e); S.set('ma_evts',e) }
   const saveS  = s  => { setSched(s);     S.set('ma_sched',s) }
@@ -432,7 +432,8 @@ export default function MyApp(){
   const aCurIdx   = activeDay===dk?activeAll.findIndex(b=>{ const s=pt(b.s),e=pt(b.e); return nowM>=s&&nowM<e }):-1
 
   const totalCIPhases = ciCycles.reduce((acc,c)=>acc+(CI_CYCLE_PHASES[c]||[]).length,0)
-  const doneCIPhases  = Object.values(ciPhases).filter(Boolean).length
+  const validCIKeys   = new Set(ciCycles.flatMap(c=>(CI_CYCLE_PHASES[c]||[]).map(({slug})=>phaseKey(c,slug))))
+  const doneCIPhases  = Object.entries(ciPhases).filter(([k,v])=>v&&validCIKeys.has(k)).length
   const ciPct         = totalCIPhases>0?Math.round((doneCIPhases/totalCIPhases)*100):0
 
   const activeTasks    = (tasks||[]).filter(t=>!isCompleted(t))
@@ -973,7 +974,7 @@ export default function MyApp(){
                   <div>
                     <div onClick={()=>setCiExpanded(e=>!e)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',borderTop:`0.5px solid ${C.bor}`,paddingTop:8,marginBottom:ciExpanded?10:0}}>
                       <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <span style={{fontSize:11,fontWeight:600,color:C.grn}}>Implementación tecnológica</span>
+                        <span style={{fontSize:11,fontWeight:600,color:C.grn}}>Implementación Tecnológica</span>
                         {!ciExpanded&&<Pill color={C.grn}>{doneCIPhases}/{totalCIPhases} · {ciPct}%</Pill>}
                       </div>
                       <Icon name={ciExpanded?'chevU':'chevD'} size={14} color={C.mut}/>
@@ -1003,6 +1004,9 @@ export default function MyApp(){
                             + Agregar {CI_CYCLE_IDS[ciCycles.length]}
                           </button>
                         )}
+                        <button onClick={()=>{saveCI({});saveCC(['C1'])}} style={{width:'100%',marginTop:6,padding:'6px',borderRadius:9,border:`0.5px solid ${C.red}40`,background:'transparent',color:C.red,cursor:'pointer',fontSize:10,fontFamily:'inherit'}}>
+                          Reiniciar progreso CI
+                        </button>
                       </div>
                     )}
                   </div>
