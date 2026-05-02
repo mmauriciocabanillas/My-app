@@ -54,10 +54,13 @@ const GOALS0 = [
 const CAT_COLORS = {Gym:C.pur,Vendify:C.grn,Universidad:C.blu,Personal:C.amb}
 
 // ─── CI PHASES ────────────────────────────────────────────────────────────────
-const CI_SLUGS     = ['f0','f1','f2','f3','f5','f6','f7','f8']
-const CI_LABELS    = {f0:'Fase 0',f1:'Fase 1',f2:'Fase 2',f3:'Fase 3',f5:'Fase 5',f6:'Fase 6',f7:'Fase 7',f8:'Fase 8'}
 const CI_CYCLE_IDS = ['C1','C2','C3']
-const phaseKey     = (cycle,slug) => `${cycle.toLowerCase()}${slug}`
+const CI_CYCLE_PHASES = {
+  C1: [{slug:'f0',label:'Fase 0'},{slug:'f1',label:'Fase 1'},{slug:'f2',label:'Fase 2'},{slug:'f3',label:'Fase 3'},{slug:'f5',label:'Fase 5'},{slug:'f6',label:'Fase 6'},{slug:'f7',label:'Fase 7'},{slug:'f8',label:'Fase 8'}],
+  C2: [{slug:'f9',label:'Fase 9'},{slug:'f10',label:'Fase 10'},{slug:'f11',label:'Fase 11'},{slug:'f12',label:'Fase 12'},{slug:'f13',label:'Fase 13'}],
+  C3: [{slug:'f14',label:'Fase 14'},{slug:'f15',label:'Fase 15'},{slug:'f16',label:'Fase 16'},{slug:'f17',label:'Fase 17'},{slug:'f18',label:'Fase 18'}],
+}
+const phaseKey = (cycle,slug) => `${cycle.toLowerCase()}${slug}`
 
 // ─── NOTION ───────────────────────────────────────────────────────────────────
 const DB = {
@@ -428,7 +431,7 @@ export default function MyApp(){
   const activeAll = [...(sched[activeDay]||[]).map(b=>({...b,_fixed:true})),...(localEvts[activeDK]||[]).map(b=>({...b,t:'personal',_fixed:false}))].sort((a,b)=>pt(a.s)-pt(b.s))
   const aCurIdx   = activeDay===dk?activeAll.findIndex(b=>{ const s=pt(b.s),e=pt(b.e); return nowM>=s&&nowM<e }):-1
 
-  const totalCIPhases = ciCycles.length*CI_SLUGS.length
+  const totalCIPhases = ciCycles.reduce((acc,c)=>acc+(CI_CYCLE_PHASES[c]||[]).length,0)
   const doneCIPhases  = Object.values(ciPhases).filter(Boolean).length
   const ciPct         = totalCIPhases>0?Math.round((doneCIPhases/totalCIPhases)*100):0
 
@@ -915,7 +918,7 @@ export default function MyApp(){
           {/* Goals list */}
           {goals.map(g=>{
             const range  = g.target-g.start
-            const isVend = g.id==='f1'
+            const isVend = g.cat==='Vendify'
             const pct    = isVend ? ciPct : (range===0?0:Math.min(100,Math.round(((g.current-g.start)/range)*100)))
             return(
               <Card key={g.id} style={{marginBottom:8}}>
@@ -970,7 +973,7 @@ export default function MyApp(){
                   <div>
                     <div onClick={()=>setCiExpanded(e=>!e)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',borderTop:`0.5px solid ${C.bor}`,paddingTop:8,marginBottom:ciExpanded?10:0}}>
                       <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <span style={{fontSize:11,fontWeight:600,color:C.grn}}>Implementación Comercial</span>
+                        <span style={{fontSize:11,fontWeight:600,color:C.grn}}>Implementación tecnológica</span>
                         {!ciExpanded&&<Pill color={C.grn}>{doneCIPhases}/{totalCIPhases} · {ciPct}%</Pill>}
                       </div>
                       <Icon name={ciExpanded?'chevU':'chevD'} size={14} color={C.mut}/>
@@ -981,14 +984,14 @@ export default function MyApp(){
                           <div key={cycle} style={{marginBottom:10}}>
                             <div style={{fontSize:10,fontWeight:600,color:C.hint,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:6}}>{cycle}</div>
                             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
-                              {CI_SLUGS.map(slug=>{
+                              {(CI_CYCLE_PHASES[cycle]||[]).map(({slug,label})=>{
                                 const k=phaseKey(cycle,slug),done=!!ciPhases[k]
                                 return(
                                   <div key={slug} onClick={()=>togCI(cycle,slug)} style={{display:'flex',alignItems:'center',gap:7,padding:'7px 9px',borderRadius:8,border:`0.5px solid ${done?C.grn:C.bor}`,background:done?`${C.grn}10`:C.surf2,cursor:'pointer'}}>
                                     <div style={{width:14,height:14,borderRadius:3,flexShrink:0,border:`1.5px solid ${done?C.grn:'rgba(255,255,255,0.2)'}`,background:done?C.grn:'transparent',display:'flex',alignItems:'center',justifyContent:'center'}}>
                                       {done&&<span style={{color:'#000',fontSize:9,fontWeight:800}}>✓</span>}
                                     </div>
-                                    <span style={{fontSize:11,color:done?C.grn:C.txt,fontWeight:done?500:400}}>{CI_LABELS[slug]}</span>
+                                    <span style={{fontSize:11,color:done?C.grn:C.txt,fontWeight:done?500:400}}>{label}</span>
                                   </div>
                                 )
                               })}
@@ -1021,36 +1024,32 @@ export default function MyApp(){
           {/* Finanzas */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,marginTop:14}}>
             <Sec style={{marginBottom:0,marginTop:0}}>Finanzas</Sec>
-            <button onClick={()=>{setEditFinance(e=>!e);setFinInput({type:'add',val:'',note:''})}} style={{display:'flex',alignItems:'center',gap:5,background:editFinance?`${C.grn}10`:'transparent',border:`0.5px solid ${editFinance?C.grn:C.bor}`,borderRadius:8,padding:'5px 10px',color:editFinance?C.grn:C.mut,cursor:'pointer',fontSize:11,fontFamily:'inherit'}}>
+            <button onClick={()=>setEditFinance(e=>!e)} style={{display:'flex',alignItems:'center',gap:5,background:editFinance?`${C.grn}10`:'transparent',border:`0.5px solid ${editFinance?C.grn:C.bor}`,borderRadius:8,padding:'5px 10px',color:editFinance?C.grn:C.mut,cursor:'pointer',fontSize:11,fontFamily:'inherit'}}>
               <Icon name="edit" size={11} color={editFinance?C.grn:C.mut}/>{editFinance?'Cerrar':'Editar'}
             </button>
           </div>
           <Card style={{marginBottom:12}}>
-            <div style={{display:'flex',alignItems:'center',gap:14}}>
+            <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:14}}>
               <CircleGauge balance={finance.balance} initial={finance.initial}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,fontWeight:500,marginBottom:3}}>Balance disponible</div>
-                <div style={{fontSize:11,marginBottom:10,color:finance.balance<20?C.red:C.mut}}>
+                <div style={{fontSize:11,color:finance.balance<20?C.red:C.mut}}>
                   {finance.balance<20?'⚠ Bajo presupuesto':`Inicial: S/${finance.initial}`}
                 </div>
-                {editFinance?(
-                  <div>
-                    <div style={{display:'flex',gap:4,marginBottom:8}}>
-                      {[['add','+ Ingreso'],['sub','− Egreso'],['set','Fijar total']].map(([t,l])=>(
-                        <button key={t} onClick={()=>setFinInput(f=>({...f,type:t}))} style={{flex:1,padding:'5px 0',fontSize:9,borderRadius:7,border:`0.5px solid ${finInput.type===t?C.grn:C.bor}`,background:finInput.type===t?`${C.grn}20`:'transparent',color:finInput.type===t?C.grn:C.mut,cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>{l}</button>
-                      ))}
-                    </div>
-                    {finInput.type==='set'&&<div style={{fontSize:10,color:C.hint,marginBottom:6,textAlign:'center'}}>Establece el monto total disponible y reinicia el balance inicial</div>}
-                    <input type="number" placeholder="Monto S/." value={finInput.val} onChange={e=>setFinInput(f=>({...f,val:e.target.value}))} style={{...inp,marginBottom:7,fontSize:15,textAlign:'center'}}/>
-                    {finInput.type!=='set'&&<input placeholder="Nota (opcional)" value={finInput.note} onChange={e=>setFinInput(f=>({...f,note:e.target.value}))} style={{...inp,marginBottom:8,fontSize:12}}/>}
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginTop:finInput.type==='set'?7:0}}>
-                      <Btn variant="outline" onClick={()=>{setEditFinance(false);setFinInput({type:'add',val:'',note:''})}} style={{width:'100%',padding:'7px'}}>Cancelar</Btn>
-                      <Btn variant="primary" disabled={!finInput.val||parseFloat(finInput.val)<0} onClick={applyFinance} style={{width:'100%',padding:'7px'}}>Aplicar</Btn>
-                    </div>
-                  </div>
-                ):<div style={{fontSize:12,color:C.hint,lineHeight:1.5}}>Toca "Editar" para registrar movimientos o fijar el balance.</div>}
               </div>
             </div>
+            <div style={{display:'flex',gap:5,marginBottom:8}}>
+              {[['add','+ Ingreso'],['sub','− Egreso'],...(editFinance?[['set','Fijar total']]:[])] .map(([t,l])=>(
+                <button key={t} onClick={()=>setFinInput(f=>({...f,type:t,val:''}))} style={{flex:1,padding:'6px 0',fontSize:10,borderRadius:8,border:`0.5px solid ${finInput.type===t?C.grn:C.bor}`,background:finInput.type===t?`${C.grn}20`:'transparent',color:finInput.type===t?C.grn:C.mut,cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>{l}</button>
+              ))}
+            </div>
+            {finInput.type==='set'&&<div style={{fontSize:10,color:C.hint,marginBottom:6,textAlign:'center'}}>Fija el balance total y reinicia el monto inicial de referencia</div>}
+            <input type="number" placeholder="Monto S/." value={finInput.val} onChange={e=>setFinInput(f=>({...f,val:e.target.value}))} style={{...inp,marginBottom:7,fontSize:15,textAlign:'center'}}/>
+            {finInput.type!=='set'&&<input placeholder="Nota (opcional)" value={finInput.note||''} onChange={e=>setFinInput(f=>({...f,note:e.target.value}))} style={{...inp,marginBottom:8,fontSize:12}}/>}
+            <Btn variant="primary" disabled={!finInput.val||parseFloat(finInput.val)<0} onClick={applyFinance} style={{width:'100%',padding:'9px'}}>
+              {finInput.type==='add'?'Registrar ingreso':finInput.type==='sub'?'Registrar egreso':'Fijar balance'}
+            </Btn>
+
 
             {/* Historial desplegable */}
             <div style={{marginTop:12}}>
