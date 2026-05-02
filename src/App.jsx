@@ -504,10 +504,15 @@ export default function MyApp(){
   }
 
   const applyFinance = () => {
-    const amt=parseFloat(finInput.val)||0; if(amt<=0)return
-    const entry={id:uid(),type:finInput.type,amount:amt,note:finInput.note,date:ldk(new Date())}
-    const nb={...finance,history:[entry,...(finance.history||[])]}
-    nb.balance = finInput.type==='add' ? finance.balance+amt : Math.max(0,finance.balance-amt)
+    const amt=parseFloat(finInput.val)||0; if(amt<0)return
+    const nb={...finance,history:[...(finance.history||[])]}
+    if(finInput.type==='set'){
+      nb.balance=amt; nb.initial=amt
+    } else {
+      const entry={id:uid(),type:finInput.type,amount:amt,note:finInput.note,date:ldk(new Date())}
+      nb.history=[entry,...nb.history]
+      nb.balance=finInput.type==='add'?finance.balance+amt:Math.max(0,finance.balance-amt)
+    }
     saveF(nb); setEditFinance(false); setFinInput({type:'add',val:'',note:''})
   }
 
@@ -869,7 +874,7 @@ export default function MyApp(){
             <div style={{display:'flex',gap:6}}>
               <Btn variant="sm" onClick={()=>{setEditingMetas(m=>!m);setEditGoalMeta(null)}}
                 style={{color:editingMetas?C.grn:C.mut,border:`0.5px solid ${editingMetas?C.grn:C.bor}`,background:editingMetas?`${C.grn}10`:'transparent'}}>
-                {editingMetas?'Listo':'✏ Editar'}
+                {editingMetas?'Listo':<span style={{display:'flex',alignItems:'center',gap:4}}><Icon name="edit" size={11} color={C.mut}/>Editar</span>}
               </Btn>
               <Btn variant="sm" onClick={()=>setShowAddGoal(g=>!g)}>+ Agregar</Btn>
             </div>
@@ -1014,7 +1019,12 @@ export default function MyApp(){
           })}
 
           {/* Finanzas */}
-          <Sec style={{marginTop:14}}>Finanzas</Sec>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8,marginTop:14}}>
+            <Sec style={{marginBottom:0,marginTop:0}}>Finanzas</Sec>
+            <button onClick={()=>{setEditFinance(e=>!e);setFinInput({type:'add',val:'',note:''})}} style={{display:'flex',alignItems:'center',gap:5,background:editFinance?`${C.grn}10`:'transparent',border:`0.5px solid ${editFinance?C.grn:C.bor}`,borderRadius:8,padding:'5px 10px',color:editFinance?C.grn:C.mut,cursor:'pointer',fontSize:11,fontFamily:'inherit'}}>
+              <Icon name="edit" size={11} color={editFinance?C.grn:C.mut}/>{editFinance?'Cerrar':'Editar'}
+            </button>
+          </div>
           <Card style={{marginBottom:12}}>
             <div style={{display:'flex',alignItems:'center',gap:14}}>
               <CircleGauge balance={finance.balance} initial={finance.initial}/>
@@ -1026,18 +1036,19 @@ export default function MyApp(){
                 {editFinance?(
                   <div>
                     <div style={{display:'flex',gap:4,marginBottom:8}}>
-                      {[['add','+ Ingreso'],['sub','− Egreso']].map(([t,l])=>(
-                        <button key={t} onClick={()=>setFinInput(f=>({...f,type:t}))} style={{flex:1,padding:'5px 0',fontSize:10,borderRadius:7,border:`0.5px solid ${finInput.type===t?C.grn:C.bor}`,background:finInput.type===t?`${C.grn}20`:'transparent',color:finInput.type===t?C.grn:C.mut,cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>{l}</button>
+                      {[['add','+ Ingreso'],['sub','− Egreso'],['set','Fijar total']].map(([t,l])=>(
+                        <button key={t} onClick={()=>setFinInput(f=>({...f,type:t}))} style={{flex:1,padding:'5px 0',fontSize:9,borderRadius:7,border:`0.5px solid ${finInput.type===t?C.grn:C.bor}`,background:finInput.type===t?`${C.grn}20`:'transparent',color:finInput.type===t?C.grn:C.mut,cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>{l}</button>
                       ))}
                     </div>
+                    {finInput.type==='set'&&<div style={{fontSize:10,color:C.hint,marginBottom:6,textAlign:'center'}}>Establece el monto total disponible y reinicia el balance inicial</div>}
                     <input type="number" placeholder="Monto S/." value={finInput.val} onChange={e=>setFinInput(f=>({...f,val:e.target.value}))} style={{...inp,marginBottom:7,fontSize:15,textAlign:'center'}}/>
-                    <input placeholder="Nota (opcional)" value={finInput.note} onChange={e=>setFinInput(f=>({...f,note:e.target.value}))} style={{...inp,marginBottom:8,fontSize:12}}/>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+                    {finInput.type!=='set'&&<input placeholder="Nota (opcional)" value={finInput.note} onChange={e=>setFinInput(f=>({...f,note:e.target.value}))} style={{...inp,marginBottom:8,fontSize:12}}/>}
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginTop:finInput.type==='set'?7:0}}>
                       <Btn variant="outline" onClick={()=>{setEditFinance(false);setFinInput({type:'add',val:'',note:''})}} style={{width:'100%',padding:'7px'}}>Cancelar</Btn>
-                      <Btn variant="primary" disabled={!finInput.val||parseFloat(finInput.val)<=0} onClick={applyFinance} style={{width:'100%',padding:'7px'}}>Aplicar</Btn>
+                      <Btn variant="primary" disabled={!finInput.val||parseFloat(finInput.val)<0} onClick={applyFinance} style={{width:'100%',padding:'7px'}}>Aplicar</Btn>
                     </div>
                   </div>
-                ):<Btn variant="outline" onClick={()=>setEditFinance(true)} style={{padding:'6px 12px',fontSize:12}}>Actualizar balance</Btn>}
+                ):<div style={{fontSize:12,color:C.hint,lineHeight:1.5}}>Toca "Editar" para registrar movimientos o fijar el balance.</div>}
               </div>
             </div>
 
@@ -1068,7 +1079,6 @@ export default function MyApp(){
             </div>
           </Card>
 
-          {notifP==='denied'&&<div style={{fontSize:11,color:C.mut,textAlign:'center',paddingBottom:8,lineHeight:1.5}}>Notificaciones bloqueadas. En iOS: Ajustes → Safari → esta página → Notificaciones → Permitir.</div>}
         </>}
 
       </div>
